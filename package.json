@@ -1,0 +1,19 @@
+{
+  "name": "pquiz",
+  "version": "0.1.0",
+  "description": "A Complex Instruction-style Participation Quiz tool",
+  "main": "build/server.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrpinsky/pquiz.git"
+  },
+  "author": "Nate Pinsky",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mrpinsky/pquiz/issues"
+  },
+  "homepage": "https://github.com/mrpinsky/pquiz#readme"
+}
