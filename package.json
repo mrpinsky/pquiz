@@ -17,7 +17,8 @@
   },
   "homepage": "https://github.com/mrpinsky/pquiz#readme",
   "dependencies": {
-    "bluebird": "^3.4.7"
+    "bluebird": "^3.4.7",
+    "hapi": "^16.1.0"
   },
   "devDependencies": {
     "babel-plugin-add-module-exports": "^0.2.1",
@@ -29,6 +30,7 @@
     "eslint": "^3.13.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
+    "gulp-concat": "^2.6.1",
     "gulp-sourcemaps": "^1.9.1",
     "minimist": "^1.2.0"
   }
