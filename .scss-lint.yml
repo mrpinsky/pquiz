@@ -1,0 +1,13 @@
+linters:
+  PropertySortOrder:
+    enabled: false
+  DeclarationOrder:
+    enabled: false
+  EmptyLineBetweenBlocks:
+    enabled: false
+  LeadingZero:
+    enabled: false
+  PlaceholderInExtend:
+    enabled: false
+  Shorthand:
+    enabled: false

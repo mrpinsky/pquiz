@@ -15,5 +15,21 @@
   "bugs": {
     "url": "https://github.com/mrpinsky/pquiz/issues"
   },
-  "homepage": "https://github.com/mrpinsky/pquiz#readme"
+  "homepage": "https://github.com/mrpinsky/pquiz#readme",
+  "dependencies": {
+    "bluebird": "^3.4.7"
+  },
+  "devDependencies": {
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-stage-0": "^6.16.0",
+    "babelify": "^7.3.0",
+    "del": "^2.2.2",
+    "eslint": "^3.13.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-sourcemaps": "^1.9.1",
+    "minimist": "^1.2.0"
+  }
 }
