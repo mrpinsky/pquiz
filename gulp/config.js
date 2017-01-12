@@ -12,16 +12,16 @@ module.exports = {
   isProd: !!gulpEnv.production,
   servicePort: (gulpEnv.port || 4000),
   dest: dest,
-  // frontend: {
-  //   dest: `${dest}/frontend`,
-  //   src: 'src/angular',
-  //   entry: 'app.js',
-  //   templates: ['**/*.template.html'],
-  //   sort: ['**/vendor.js', '**/app.js', '**/module.js', '**/*.js'],
-  //   index: ['src/angular/index.html'],
-  //   assets: ['assets/**'],
-  //   libs: [],
-  // },
+  frontend: {
+    dest: `${dest}/frontend`,
+    src: 'src/elm',
+    entry: 'PQuiz.elm',
+    // templates: ['**/*.template.html'],
+    // sort: ['**/vendor.js', '**/app.js', '**/module.js', '**/*.js'],
+    index: ['src/elm/index.html'],
+    // assets: ['assets/**'],
+    // libs: [],
+  },
 
   styles: {
     src: 'src/styles',

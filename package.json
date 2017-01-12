@@ -28,9 +28,10 @@
     "babelify": "^7.3.0",
     "del": "^2.2.2",
     "eslint": "^3.13.0",
-    "gulp": "^3.9.1",
+    "gulp": "gulpjs/gulp.git#4.0",
     "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.1",
+    "gulp-elm": "^0.6.1",
     "gulp-sourcemaps": "^1.9.1",
     "minimist": "^1.2.0"
   }
