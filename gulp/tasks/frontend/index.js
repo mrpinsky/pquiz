@@ -34,3 +34,5 @@ gulp.task('build:frontend',
     buildIndex
   )
 );
+
+gulp.task('serve:frontend', () => 0);

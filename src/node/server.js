@@ -1,6 +1,19 @@
 import * as Hapi from 'hapi';
+import Knex from 'knex';
 
-const server = new Hapi.Server({
+const knex = Knex({ // eslint-disable-line new-cap
+  client: 'postgres',
+  debug: true,
+  connection: {
+    host: 'localhost',
+    user: 'nate',
+    password: '',
+    database: 'myapp_test',
+  },
+});
+
+
+export const server = new Hapi.Server({
   debug: {
     log: ['error'],
   },
