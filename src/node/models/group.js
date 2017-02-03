@@ -1,6 +1,6 @@
 export class Group {
   constructor(id, label, classPeriod, students) {
-    this.$id;
+    this.$id = id;
     this.$label = label;
     this.$class = classPeriod;
     this.$students = students || [];

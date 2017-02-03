@@ -32,7 +32,7 @@ export class ClassPeriod {
     return this.$groups;
   }
 
-  set addGroup(label, students) {
+  addGroup(label, students) {
     students.forEach(student => {
       this.$groups.forEach(group => {
         group.removeStudent(student);

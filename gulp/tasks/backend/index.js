@@ -18,8 +18,8 @@ gulp.task('db:reset', shell.task([
   // `psql -U flo -d pq -c '\\i src/node/db/db_structuredata.sql'`,
 ]));
 
-function buildBackend() {
-  return gulp.src('src/node/server.js')
+function buildBackendScripts() {
+  return gulp.src(config.backend.scripts, { cwd: config.backend.src })
   .pipe(sourcemaps.init())
   .pipe(babel({
     presets: ['es2015', 'stage-0'],
@@ -34,6 +34,6 @@ gulp.task('clean:backend', clean);
 gulp.task('build:backend',
   gulp.series(
     clean,
-    buildBackend
+    buildBackendScripts
   )
 );
