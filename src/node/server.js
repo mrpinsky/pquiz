@@ -1,7 +1,7 @@
 import * as Hapi from 'hapi';
 import * as Good from 'good';
 // import Knex from 'knex';
-import * as Bluebird from 'bluebird';
+// import * as Bluebird from 'bluebird';
 
 import { controllers } from './controllers/index.js';
 
@@ -16,8 +16,7 @@ import { controllers } from './controllers/index.js';
 //   },
 // });
 
-
-export const server = new Hapi.Server({
+const server = new Hapi.Server({
   debug: {
     log: ['error'],
   },
@@ -44,8 +43,7 @@ server.register({
       }, 'stdout'],
     },
   },
-})
-.then(() => {
+}).then(() => {
   return server.route({
     method: 'GET',
     path: '/',
@@ -53,22 +51,17 @@ server.register({
       reply('<h1>Home</h1>');
     },
   });
-})
-.then(() => {
-  return Bluebird.all(
-    controllers.map((C) => {
-      console.log(C);
+}).then(() => {
+  return Promise.all(
+    controllers.map(C => {
       return server.register(new C().plugin, C.hapiOptions);
     })
   );
-})
-.then(() => {
+}).then(() => {
   server.start(() => {
-    console.log(__dirname);
     console.log(`Server running at: ${server.info.uri}`);
   });
-})
-.catch((err) => {
+}).catch((err) => {
   console.error(err.stack);
   throw err;
 });

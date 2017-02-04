@@ -1,4 +1,8 @@
 export const baseRoutes = {
+  list: {
+    method: 'GET',
+    path: '',
+  },
   create: {
     method: 'POST',
     path: '',

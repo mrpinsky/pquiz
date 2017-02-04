@@ -1,3 +1,5 @@
+// import Boom from 'boom';
+
 import { baseRoutes } from './baseRoutes';
 
 function plugin(server, _, next) {
@@ -11,8 +13,8 @@ function plugin(server, _, next) {
 
 export class BaseController {
   constructor() {
-    this.constructor.plugin = plugin.bind(this);
-    this.constructor.plugin.attributes = {
+    this.plugin = plugin.bind(this);
+    this.plugin.attributes = {
       name: this.constructor.$name,
       version: '0.0.1',
     };
@@ -20,7 +22,7 @@ export class BaseController {
 
   createHandler(action) {
     return (request, reply) => {
-      reply(`<h1>${this.constructor.$name} ${action.toUpperCase()}</h1><p>${request.params}</p>`);
+      reply(`<h1>${this.constructor.$name} ${action}</h1><p>${JSON.stringify(request.params, null, 2)}</p>`);
     };
   }
 
@@ -32,7 +34,6 @@ export class BaseController {
       },
       opts
     );
-
     return routeConfig;
   }
 }
