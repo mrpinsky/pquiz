@@ -35,4 +35,6 @@ gulp.task('build:frontend',
   )
 );
 
-gulp.task('serve:frontend', () => 0);
+gulp.task('watch:frontend', () => {});
+
+gulp.task('serve:frontend', () => {});

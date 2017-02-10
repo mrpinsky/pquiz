@@ -5,4 +5,4 @@ require('./tasks');
 
 // gulp.task('default', gulp.series('clean', 'serve'));
 
-gulp.task('default', gulp.series('clean', 'build', 'serve'));
+gulp.task('default', gulp.series('build', 'serve'));
