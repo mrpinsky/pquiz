@@ -4,6 +4,7 @@ import * as Good from 'good';
 // import * as Bluebird from 'bluebird';
 
 import { controllers } from './controllers/index.js';
+import { services } from './services';
 
 // const knex = Knex({ // eslint-disable-line new-cap
 //   client: 'postgres',
@@ -47,7 +48,7 @@ server.register({
   return server.route({
     method: 'GET',
     path: '/',
-    handler: (request, reply) => {
+    handler: (_, reply) => {
       reply('<h1>Home</h1>');
     },
   });
@@ -57,6 +58,8 @@ server.register({
       return server.register(new C().plugin, C.hapiOptions);
     })
   );
+}).then(() => {
+  return services.initialize();
 }).then(() => {
   server.start(() => {
     console.log(`Server running at: ${server.info.uri}`);

@@ -1,5 +1,6 @@
-// import Boom from 'boom';
+import Boom from 'boom';
 
+import { services } from '../services';
 import { baseRoutes } from './baseRoutes';
 
 function plugin(server, _, next) {
@@ -20,9 +21,41 @@ export class BaseController {
     };
   }
 
-  createHandler(action) {
+  create() {
+    return () => {
+      return Promise.resolve('NOT IMPLEMENTED');
+    };
+  }
+
+  read() {
+    return (request) => {
+      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select();
+    };
+  }
+
+  update() {
+    return () => {
+      return Promise.resolve('NOT IMPLEMENTED');
+    };
+  }
+
+  destroy() {
+    return () => {
+      return Promise.resolve('NOT IMPLEMENTED');
+    };
+  }
+
+  createHandler(action, options) {
+    const handler = this[action](options);
     return (request, reply) => {
-      reply(`<h1>${this.constructor.$name} ${action}</h1><p>${JSON.stringify(request.params, null, 2)}</p>`);
+      return handler(request)
+      .then((data) => {
+        reply(data).code(200);
+      }).catch((err) => {
+        console.log(err);
+        return reply(Boom.badRequest('Something went wrong.'));
+      });
+      // reply(`<h1>${this.constructor.$name} ${action}</h1><p>${JSON.stringify(request.params, null, 2)}</p>`);
     };
   }
 
@@ -30,7 +63,7 @@ export class BaseController {
     const routeConfig = Object.assign(
       {},
       {
-        handler: opts.handler || this.createHandler(action),
+        handler: this.createHandler(action),
       },
       opts
     );

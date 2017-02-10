@@ -39,10 +39,13 @@
     "gulp": "gulpjs/gulp.git#4.0",
     "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.1",
+    "gulp-develop-server": "^0.5.2",
     "gulp-elm": "^0.6.1",
+    "gulp-livereload": "^3.8.1",
     "gulp-shell": "^0.5.2",
     "gulp-sourcemaps": "^1.9.1",
     "minimist": "^1.2.0",
+    "sane": "^1.5.0",
     "webpack": "^2.2.0"
   }
 }
