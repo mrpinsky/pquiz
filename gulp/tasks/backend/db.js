@@ -1,13 +1,27 @@
 import gulp from 'gulp';
 import shell from 'gulp-shell';
+import Knex from 'knex';
 import through from 'through2';
 
 const config = require('../../config');
 
 function migrate() {
-  const services = require(`../../../${config.dest}/backend/services`).services;
-  services.initialize();
-  return services.knex('migrations')
+  const knex = Knex({ // eslint-disable-line new-cap
+    client: 'postgres',
+    debug: true,
+    connection: {
+      user: 'postgres',
+      host: 'localhost',
+      port: '5432',
+      database: 'pq',
+      charset: 'utf8',
+    },
+    pool: {
+      max: 1, min: 1,
+    },
+  });
+
+  return knex('migrations')
   .where({
     status: 'up',
   }).pluck('filename')
@@ -20,7 +34,7 @@ function migrate() {
         callback();
       } else if (filename.match(/\.sql$/) !== null) {
         console.log(`sourcing ${filename}`);
-        services.knex.raw(file.contents.toString())
+        knex.raw(file.contents.toString())
         .then(() => {
           callback();
         })
@@ -38,7 +52,7 @@ function migrate() {
         });
       }
     }, () => {
-      return services.knex.destroy().then(() => {
+      return knex.destroy().then(() => {
         console.log('migration complete');
         process.exit();
       });

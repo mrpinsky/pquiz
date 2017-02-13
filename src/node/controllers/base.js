@@ -29,7 +29,8 @@ export class BaseController {
 
   read() {
     return (request) => {
-      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select();
+      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select()
+      .then(results => results[0]);
     };
   }
 
