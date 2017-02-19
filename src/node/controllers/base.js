@@ -13,7 +13,8 @@ function plugin(server, _, next) {
 }
 
 export class BaseController {
-  constructor() {
+  constructor(Model) {
+    this.Model = Model;
     this.plugin = plugin.bind(this);
     this.plugin.attributes = {
       name: this.constructor.$name,
@@ -22,27 +23,34 @@ export class BaseController {
   }
 
   create() {
-    return () => {
-      return Promise.resolve('NOT IMPLEMENTED');
+    return (request) => {
+      return services.knex(this.Model.$name).insert(request.payload)
+      .then(ids => ids[0]);
     };
   }
 
   read() {
     return (request) => {
-      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select()
+      return services.knex(this.Model.$name).where({ id: request.params.itemId }).select()
       .then(results => results[0]);
     };
   }
 
   update() {
-    return () => {
-      return Promise.resolve('NOT IMPLEMENTED');
+    return (request) => {
+      return services.knex(this.Model.$name).where({ id: request.params.itemId })
+      .update(request.payload)
+      .then(results => results[0]);
     };
   }
 
   destroy() {
-    return () => {
-      return Promise.resolve('NOT IMPLEMENTED');
+    return (request) => {
+      return services.knex(this.Model.$name).where({ id: request.params.itemId }).select()
+      .then(results => {
+        return services.knex(this.Model.$name).where({ id: request.params.itemId }).del()
+        .then(() => results[0]);
+      });
     };
   }
 

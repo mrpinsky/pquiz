@@ -29,3 +29,5 @@ export class User {
     this.$email = newEmail;
   }
 }
+
+User.$name = 'users';
