@@ -2,7 +2,6 @@ import knex from 'knex';
 
 export const services = {
   knex: null,
-  server: null,
   initialize: (opts = {}) => {
     // Promise.longStackTraces();
     const knexOpts = Object.assign(
@@ -26,5 +25,9 @@ export const services = {
     );
 
     services.knex = knex(knexOpts);
+  },
+
+  teardown: () => {
+    return services.knex.destroy();
   },
 };

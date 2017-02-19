@@ -1,7 +1,5 @@
 import * as Hapi from 'hapi';
-import * as Good from 'good';
 // import Knex from 'knex';
-// import * as Bluebird from 'bluebird';
 
 import { controllers } from './controllers/index.js';
 import { services } from './services';
@@ -17,7 +15,7 @@ import { services } from './services';
 //   },
 // });
 
-const server = new Hapi.Server({
+export const server = new Hapi.Server({
   debug: {
     log: ['error'],
   },
@@ -28,23 +26,25 @@ server.connection({
   port: 3000,
 });
 
-server.register({
-  register: Good,
-  options: {
-    reporters: {
-      console: [{
-        module: 'good-squeeze',
-        name: 'Squeeze',
-        args: [{
-          response: '*',
-          log: '*',
-        }],
-      }, {
-        module: 'good-console',
-      }, 'stdout'],
-    },
-  },
-}).then(() => {
+export const serverStarted = Promise.resolve()
+// server.register({
+//   register: Good,
+//   options: {
+//     reporters: {
+//       console: [{
+//         module: 'good-squeeze',
+//         name: 'Squeeze',
+//         args: [{
+//           response: '*',
+//           log: '*',
+//         }],
+//       }, {
+//         module: 'good-console',
+//       }, 'stdout'],
+//     },
+//   },
+// })
+.then(() => {
   return server.route({
     method: 'GET',
     path: '/',
@@ -61,9 +61,11 @@ server.register({
 }).then(() => {
   return services.initialize();
 }).then(() => {
-  server.start(() => {
-    console.log(`Server running at: ${server.info.uri}`);
-  });
+  if (!module.parent) {
+    server.start(() => {
+      console.log(`Server running at: ${server.info.uri}`);
+    });
+  }
 }).catch((err) => {
   console.error(err.stack);
   throw err;
