@@ -38,3 +38,5 @@ gulp.task('build:frontend',
 gulp.task('watch:frontend', () => {});
 
 gulp.task('serve:frontend', () => {});
+
+gulp.task('test:frontend', () => Promise.resolve());

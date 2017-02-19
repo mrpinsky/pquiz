@@ -31,9 +31,10 @@ module.exports = {
   backend: {
     dest: `${dest}/backend`,
     src: 'src/node',
-    scripts: ['**/*.js', '**/*.ts'],
+    scripts: ['**/*.js'],
     sql: ['**/*.sql'],
-    templates: ['**/*.njn', '**/*.html'],
+    templates: ['**/*.html'],
+    test: ['test/index.js'],
     assets: ['assets/**'],
   },
 

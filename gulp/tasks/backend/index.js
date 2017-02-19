@@ -6,6 +6,7 @@ const scripts = require('./scripts');
 const serve = require('./serve');
 const assets = require('./assets');
 const db = require('./db');
+const test = require('./test');
 
 function clean() {
   return del([config.backend.dest]);
@@ -40,5 +41,12 @@ gulp.task('serve:backend',
       'watch:backend',
       serve.serve
     )
+  )
+);
+
+gulp.task('test:backend',
+  gulp.series(
+    'build:backend',
+    test.test
   )
 );
