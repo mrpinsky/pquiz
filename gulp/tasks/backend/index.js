@@ -16,7 +16,7 @@ gulp.task('clean:backend', clean);
 
 gulp.task('build:backend',
   gulp.series(
-    clean,
+    'clean:backend',
     gulp.parallel(
       assets.build,
       scripts.build
