@@ -3,6 +3,4 @@ gulp.config = require('./config');
 
 require('./tasks');
 
-// gulp.task('default', gulp.series('clean', 'serve'));
-
-gulp.task('default', gulp.series('build', 'serve'));
+gulp.task('default', gulp.series('clean', 'serve'));

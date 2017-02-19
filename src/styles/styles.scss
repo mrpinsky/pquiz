@@ -1,0 +1,302 @@
+$color-1: hsla(115,100%,100%,1);
+$color-2: hsla(55,100%,100%,0);
+$color-3: hsla(0,100%,100%,1);
+$colors: $color-1 $color-2 $color-3;
+
+.menu {
+  text-align: center;
+}
+
+h2.hidden {
+  display: none;
+}
+
+button.menu-button {
+  color: #FFFFFF;
+  background-color: #7892c2;
+  border: 2px solid #4e6096;
+  font-size: larger;
+  font-weight: bold;
+  padding: 3px;
+  margin: 2.5px;
+  cursor: pointer;
+}
+
+.layout-option {
+  font-size: 28px;
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+.layout-option button {
+  background-color: transparent;
+  border-style: none;
+  font-weight: bold;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.layout-option .counter {
+  font-size: 28px;
+  font-family: sans-serif;
+  font-weight: bold;
+  width: 20px;
+  text-align: center;
+  margin-top: 3px;
+  cursor: default;
+}
+
+.groups-list {
+  display: flex;
+  flex-wrap: wrap;
+  overflow: auto;
+}
+
+.group-box-3 {
+  width: 33.333%;
+  flex: none;
+}
+
+.group-box-4 {
+  width: 25%;
+  flex: none;
+}
+
+.group-box-5 {
+  width: 20%;
+  flex: none;
+}
+
+.group {
+  border: 2px solid black;
+  border-radius: 6px;
+  margin: 5px;
+}
+
+.group .title {
+  text-align: left;
+  overflow: hidden;
+  font-size: xx-large;
+  font-weight: bold;
+  font-family: sans-serif;
+  margin-left: 0.2em;
+  cursor: text;
+  word-wrap: break-word;
+}
+
+.group .group-input {
+  height: fit-content;
+}
+
+.group .group-input .enter {
+  display: none;
+}
+
+.buttons {
+  display: block;
+  font-size: medium;
+  text-align: center;
+}
+
+.group .group-input.entering .enter {
+  display: block;
+  width: 99%;
+  height: 1.7em;
+  font-size: medium;
+  text-align: center;
+}
+
+.group .group-input.entering .buttons {
+  display: none;
+}
+
+button.input-button {
+  background-color: #FFFFFF;
+  border-color: #000000;
+  border-style: solid;
+  border-width: 2px;
+  color: #FFFFFF;
+  display: inline-block;
+  font-family:sans-serif;
+  font-weight: bold;
+  font-size: 1.5em;
+  width: 3px / 9px * 100%;
+  cursor: pointer;
+}
+
+button.input-button.first-kind {
+  background-color: #44c767;
+  border-color: #33944d;
+}
+
+button.input-button.second-kind {
+  background-color: #e4dc81;
+  border-color: #c6b92a;
+}
+
+button.input-button.third-kind {
+  background-color: #f24537;
+  border-color: #8a2a21;
+}
+
+.points {
+  text-align: center;
+  font-size: 2.5em;
+  font-weight: bold;
+  font-family: sans-serif;
+  cursor: default;
+  display: block;
+}
+
+@for $i from 1 through 10 {
+  $dec: 5% * $i;
+
+  .points.total-#{$i} {
+    margin: 0 (50% - $dec);
+    background-color: hsla(0,100%,100%-$dec,1);
+  }
+
+  .points.total-#{$i}.pos {
+    margin: 0 (50% - $dec);
+    background-color: hsla(115,100%,100%-$dec,1);
+  }
+}
+
+.points.total-0 {
+  margin: 0 40%;
+  background-color: hsla(0,100%,100%,1)
+}
+
+section {
+  height: 12em;
+  overflow: auto;
+}
+
+.observation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.remove {
+  float: right;
+  text-align: center;
+  background-color: transparent;
+  border-style: none;
+  color: #ADADAD;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.obs-counter {
+  float: left;
+  width: 52px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.21em;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.obs-counter button.increment {
+  background-color: transparent;
+  border-style: none;
+  font-weight: bold;
+  font-size: 1.2em;
+  cursor: pointer;
+  display: inline-block;
+  flex: 1 0 auto;
+}
+
+.obs-counter .count {
+  font-size: 1.2em;
+  font-family: sans-serif;
+  font-weight: bold;
+  display: flex;
+  width: 1.1em;
+  text-align: right;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.observation {
+  display: flex;
+  flex-direction: row;
+}
+
+@for $kind from 1 through 3 {
+  .observation.kind-#{$kind} {
+    background-color: darken(nth($colors, $kind), 35%);
+    display: flex;
+    flex-direction: row;
+  }
+}
+
+@for $kind from 1 through 3 {
+  @for $count from 0 through 5 {
+    .observation.kind-#{$kind}.count-#{$count} {
+      background-color: darken(nth($colors, $kind), $count * 7%);
+      display: flex;
+      flex-direction: row;
+    }
+  }
+}
+
+.observation .description {
+  overflow: hidden;
+  font-weight: bold;
+  text-align: left;
+  margin-left: 5px;
+  display: flex;
+  flex: 1 0 75%;
+}
+
+.observation .right-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  flex-flow: column wrap;
+}
+
+.observation .right-buttons button {
+  text-align: center;
+  background-color: transparent;
+  border-style: none;
+  color: #ADADAD;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 0.7em;
+  cursor: pointer;
+  display: block;
+}
+
+.description .view {
+  font-size: 1.2em;
+  font-family: sans-serif;
+  text-align: left;
+  word-wrap: break-word;
+  line-height: 1.4em;
+  padding: 2px;
+}
+
+.struck {
+  text-decoration: line-through;
+}
+
+.description.editing .edit {
+  display: inline-block;
+  overflow: hidden;
+  font-size: 1.2em;
+  font-family: sans-serif;
+  text-align: left;
+  flex: 1 0 75%;
+}
+
+.description.editing .view {
+  display: none;
+}
+
+.description .edit {
+  display: none;
+}
