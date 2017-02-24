@@ -1,8 +1,10 @@
 import * as Hapi from 'hapi';
-// import Knex from 'knex';
+import Good from 'good';
+import hapiAuthBearer from 'hapi-auth-bearer-token';
 
 import { controllers } from './controllers/index.js';
 import { services } from './services';
+import { TokenStrategy } from './controllers/authenticationPlugins/token';
 
 // const knex = Knex({ // eslint-disable-line new-cap
 //   client: 'postgres',
@@ -26,25 +28,27 @@ server.connection({
   port: 3000,
 });
 
-export const serverStarted = Promise.resolve()
-// server.register({
-//   register: Good,
-//   options: {
-//     reporters: {
-//       console: [{
-//         module: 'good-squeeze',
-//         name: 'Squeeze',
-//         args: [{
-//           response: '*',
-//           log: '*',
-//         }],
-//       }, {
-//         module: 'good-console',
-//       }, 'stdout'],
-//     },
-//   },
-// })
+// export const serverStarted = Promise.resolve()
+export const serverStarted = server.register({
+  register: Good,
+  options: {
+    reporters: {
+      console: [{
+        module: 'good-squeeze',
+        name: 'Squeeze',
+        args: [{
+          response: '*',
+          log: '*',
+        }],
+      }, {
+        module: 'good-console',
+      }, 'stdout'],
+    },
+  },
+})
 .then(() => {
+  return server.register(hapiAuthBearer);
+}).then(() => {
   return server.route({
     method: 'GET',
     path: '/',
@@ -53,6 +57,9 @@ export const serverStarted = Promise.resolve()
     },
   });
 }).then(() => {
+  return server.register([require('vision'), require('inert'), { register: require('lout') }]);
+}).then(() => {
+  server.auth.strategy('bearer', 'bearer-access-token', TokenStrategy.strategy);
   return Promise.all(
     controllers.map(C => {
       return server.register(new C().plugin, C.hapiOptions);

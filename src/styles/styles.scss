@@ -3,6 +3,10 @@ $color-2: hsla(55, 100%, 100%, 0);
 $color-3: hsla(0, 100%, 100%, 1);
 $colors: $color-1 $color-2 $color-3;
 
+body {
+  margin: 0;
+}
+
 .menu {
   text-align: center;
 }

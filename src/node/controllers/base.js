@@ -13,8 +13,7 @@ function plugin(server, _, next) {
 }
 
 export class BaseController {
-  constructor(Model) {
-    this.Model = Model;
+  constructor() {
     this.plugin = plugin.bind(this);
     this.plugin.attributes = {
       name: this.constructor.$name,
@@ -24,21 +23,21 @@ export class BaseController {
 
   create() {
     return (request) => {
-      return services.knex(this.Model.$name).insert(request.payload)
+      return services.knex(this.constructor.$name).insert(request.payload)
       .then(ids => ids[0]);
     };
   }
 
   read() {
     return (request) => {
-      return services.knex(this.Model.$name).where({ id: request.params.itemId }).select()
+      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select()
       .then(results => results[0]);
     };
   }
 
   update() {
     return (request) => {
-      return services.knex(this.Model.$name).where({ id: request.params.itemId })
+      return services.knex(this.constructor.$name).where({ id: request.params.itemId })
       .update(request.payload)
       .then(results => results[0]);
     };
@@ -46,9 +45,9 @@ export class BaseController {
 
   destroy() {
     return (request) => {
-      return services.knex(this.Model.$name).where({ id: request.params.itemId }).select()
+      return services.knex(this.constructor.$name).where({ id: request.params.itemId }).select()
       .then(results => {
-        return services.knex(this.Model.$name).where({ id: request.params.itemId }).del()
+        return services.knex(this.constructor.$name).where({ id: request.params.itemId }).del()
         .then(() => results[0]);
       });
     };
@@ -58,8 +57,8 @@ export class BaseController {
     const handler = this[action](options);
     return (request, reply) => {
       return handler(request)
-      .then((data) => {
-        reply(data).code(200);
+      .then(data => {
+        return reply(data).code(200);
       }).catch((err) => {
         console.log(err);
         return reply(Boom.badRequest('Something went wrong.'));

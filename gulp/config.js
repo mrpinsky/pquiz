@@ -15,10 +15,10 @@ module.exports = {
   frontend: {
     dest: `${dest}/frontend`,
     src: 'src/elm',
-    entry: 'PQuiz.elm',
-    // templates: ['**/*.template.html'],
+    entry: 'modules/App.elm',
     // sort: ['**/vendor.js', '**/app.js', '**/module.js', '**/*.js'],
     index: ['src/elm/index.html'],
+    files: ['modules/*.elm'],
     // assets: ['assets/**'],
     // libs: [],
   },

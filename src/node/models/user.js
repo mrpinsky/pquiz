@@ -10,3 +10,4 @@ User.$schema = {
   },
   relationships: {},
 };
+User.$fields = Object.keys(User.$schema.attributes).concat(Object.keys(User.$schema.relationships));
