@@ -49,13 +49,23 @@ export const serverStarted = server.register({
 .then(() => {
   return server.register(hapiAuthBearer);
 }).then(() => {
-  return server.route({
-    method: 'GET',
-    path: '/',
-    handler: (_, reply) => {
-      reply('<h1>Home</h1>');
-    },
-  });
+  return Promise.all([
+    server.route({
+      method: 'GET',
+      path: '/',
+      handler: (_, reply) => {
+        reply('<h1>Home</h1>');
+      },
+    }),
+    server.route({
+      method: 'POST',
+      path: '/api/login',
+      handler: (request, reply) => {
+        services.knex('users').where({ email: request.payload.email }).select('id', 'name', 'email', 'bearer_token')
+        .then(result => reply(result[0]));
+      },
+    }),
+  ]);
 }).then(() => {
   return server.register([require('vision'), require('inert'), { register: require('lout') }]);
 }).then(() => {

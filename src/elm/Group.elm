@@ -6,7 +6,7 @@ import Html.Events as Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
 import Json.Decode as Json
-import Observation
+import Observation as Observation
 import Char
 import String
 

@@ -15,10 +15,11 @@ module.exports = {
   frontend: {
     dest: `${dest}/frontend`,
     src: 'src/elm',
-    entry: 'modules/App.elm',
+    entry: 'App.elm',
     // sort: ['**/vendor.js', '**/app.js', '**/module.js', '**/*.js'],
     index: ['src/elm/index.html'],
-    files: ['modules/*.elm'],
+    elm: ['*.elm'],
+    scripts: ['*.js'],
     // assets: ['assets/**'],
     // libs: [],
   },

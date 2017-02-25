@@ -1,26 +1,26 @@
 const gulp = require('gulp');
-const elm = require('gulp-elm');
+const babel = require('gulp-babel');
 const sourcemaps = require('gulp-sourcemaps');
 
 const config = require('../../config');
 const saneWatch = require('../../util/saneWatch');
 
-function compileElm() {
-  return gulp.src(config.frontend.elm, { cwd: config.frontend.src })
+function buildFrontendScripts() {
+  return gulp.src(config.frontend.scripts, { cwd: config.frontend.src })
   .pipe(sourcemaps.init())
-  .pipe(elm.bundle('_pqApp.js'))
+  .pipe(babel({
+    presets: ['es2015'],
+  }))
   .pipe(sourcemaps.write())
   .pipe(gulp.dest(config.frontend.dest));
 }
 
-gulp.task('elm:build', gulp.series(elm.init, compileElm));
-
 module.exports = {
-  build: 'elm:build',
+  build: buildFrontendScripts,
   watch: saneWatch({
-    label: 'Elm',
+    label: 'Frontend Scripts',
     path: config.frontend.src,
-    glob: '**/*.elm',
-    rebuild: compileElm,
+    glob: '*.js',
+    rebuild: buildFrontendScripts,
   }),
 };

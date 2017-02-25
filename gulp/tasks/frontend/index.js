@@ -5,6 +5,7 @@ const config = require('../../config');
 const serve = require('./serve');
 const styles = require('./styles');
 const inject = require('./inject');
+const scripts = require('./scripts');
 const elm = require('./elm');
 
 function clean() {
@@ -18,6 +19,7 @@ gulp.task('build:frontend',
     'clean:frontend',
     gulp.parallel(
       elm.build,
+      scripts.build,
       styles.build
     ),
     inject.build
@@ -28,6 +30,7 @@ gulp.task('watch:frontend',
   gulp.parallel(
     inject.watch,
     styles.watch,
+    scripts.watch,
     elm.watch
   )
 );
@@ -37,6 +40,7 @@ gulp.task('serve:frontend',
     'build:frontend',
     gulp.parallel(
       inject.watch,
+      scripts.watch,
       styles.watch,
       elm.watch,
       serve.serve

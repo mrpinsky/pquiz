@@ -13,7 +13,7 @@ function serveFrontend() {
     return proxy.web(req, res);
   });
 
-  app.use(express.static(config.frontend.dest, { maxAge: 60000 }));
+  app.use(express.static(config.frontend.dest, { maxAge: 0 }));
   app.all('*.html', (req, res) => {
     return res.status(404).send('not found');
   });
