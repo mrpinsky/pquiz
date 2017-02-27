@@ -11,10 +11,10 @@ app.ports.focus.subscribe(selector => {
     if (nodes.length === 1 && document.activeElement !== nodes[0]) {
       nodes[0].focus();
     }
-  }, 50);
+  }, 1000);
 });
 
-app.ports.setLocalStorage.subscribe(state => {
+app.ports.saveQuizLocal.subscribe(state => {
   localStorage.setItem('elm-pq-save', JSON.stringify(state));
 });
 

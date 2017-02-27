@@ -1,11 +1,12 @@
-module Observation exposing (Model, InternalMsg(Increment), init, Translator, translator, update, view, viewWithRemoveButton, obsValue)
+module Observation exposing (Model, Msg, init, update, viewWithRemoveButton, obsValue, toJSON, fromJSON, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
-import Json.Decode as Json
-import Char
-import String
+import Json.Decode as Decode
+import Json.Encode as Encode
+import Result exposing (Result(Ok, Err))
+import Util
 
 
 -- MODEL
@@ -15,50 +16,85 @@ type alias Model =
     { description : String
     , count : Int
     , kind : Kind
-    , editing : Bool
-    , isActive : Bool
+    , struck : Bool
     , id : Int
     }
 
 
-type alias Kind =
-    String
+toJSON : Model -> Encode.Value
+toJSON model =
+    Encode.object
+        [ ( "description", Encode.string model.description )
+        , ( "count", Encode.int model.count )
+        , ( "kind", Encode.int <| kindToInt model.kind )
+        , ( "struck", Encode.bool model.struck )
+        , ( "id", Encode.int model.id )
+        ]
 
 
+decoder : Decode.Decoder Model
+decoder =
+    Decode.map5
+        Model
+        (Decode.field "description" Decode.string)
+        (Decode.field "count" Decode.int)
+        (Decode.field "kind" <| Decode.map kindFromInt Decode.int)
+        (Decode.field "editing" Decode.bool)
+        (Decode.field "id" Decode.int)
 
---Positive | Negative | Neutral
+
+fromJSON : Decode.Value -> Int -> Model
+fromJSON value nextId =
+    let
+        result =
+            Decode.decodeValue decoder value
+    in
+        case result of
+            Ok model ->
+                model
+
+            Err _ ->
+                baseModel nextId
+
+
+type Kind
+    = FirstKind
+    | SecondKind
+    | ThirdKind
 
 
 kindFromInt : Int -> Kind
 kindFromInt n =
     case n of
         1 ->
-            "Positive"
+            FirstKind
 
         2 ->
-            "Neutral"
+            SecondKind
 
         3 ->
-            "Negative"
+            ThirdKind
 
         _ ->
-            "Neutral"
+            SecondKind
 
 
 kindToInt : Kind -> Int
 kindToInt k =
     case k of
-        "Positive" ->
+        FirstKind ->
             1
 
-        "Neutral" ->
+        SecondKind ->
             2
 
-        "Negative" ->
+        ThirdKind ->
             3
 
-        _ ->
-            0
+
+baseModel : Int -> Model
+baseModel id =
+    Model "" 0 FirstKind False id
 
 
 init : String -> Int -> Int -> Model
@@ -70,8 +106,7 @@ init desc kNum id =
         { description = desc
         , count = 1
         , kind = k
-        , editing = False
-        , isActive = True
+        , struck = False
         , id = id
         }
 
@@ -80,60 +115,31 @@ init desc kNum id =
 -- MESSAGING
 
 
-type InternalMsg
-    = Editing
-    | Update String
+type Msg
+    = Update String
     | Increment
     | ToggleStrikethrough
-
-
-type OutMsg
-    = Remove
-
-
-type Msg
-    = ForSelf InternalMsg
-    | ForParent OutMsg
-
-
-type alias TranslationDictionary parentMsg =
-    { onInternalMessage : InternalMsg -> parentMsg
-    , onRemove : parentMsg
-    }
-
-
-type alias Translator parentMsg =
-    Msg -> parentMsg
-
-
-translator : TranslationDictionary parentMsg -> Translator parentMsg
-translator { onInternalMessage, onRemove } msg =
-    case msg of
-        ForSelf internal ->
-            onInternalMessage internal
-
-        ForParent Remove ->
-            onRemove
+    | Delete
 
 
 
 -- UPDATE
 
 
-update : InternalMsg -> Model -> Model
+update : Msg -> Model -> ( Model, Maybe Int )
 update msg model =
     case msg of
-        Editing ->
-            { model | editing = not model.editing }
-
         Update newDescription ->
-            { model | description = newDescription }
+            ( { model | description = newDescription }, Nothing )
 
         Increment ->
-            { model | count = model.count + 1, isActive = True }
+            ( { model | count = model.count + 1, struck = False }, Nothing )
 
         ToggleStrikethrough ->
-            { model | isActive = not model.isActive, count = 0 }
+            ( { model | struck = not model.struck, count = 0 }, Nothing )
+
+        Delete ->
+            ( model, Just model.id )
 
 
 
@@ -153,7 +159,7 @@ view model =
         , div
             [ class "right-buttons"
             ]
-            [ button [ onClick (ForSelf ToggleStrikethrough) ]
+            [ button [ onClick ToggleStrikethrough ]
                 [ text "--" ]
             ]
         , div [ class "description" ] [ viewDesc model ]
@@ -171,10 +177,13 @@ viewWithRemoveButton model =
         ]
         [ viewCounter model
         , viewDesc model
-        , span [ class "right-buttons" ]
-            [ button [ onClick (ForParent Remove) ]
+        , span
+            [ class "right-buttons" ]
+            [ button
+                [ onClick Delete ]
                 [ text "×" ]
-            , button [ onClick (ForSelf ToggleStrikethrough) ]
+            , button
+                [ onClick ToggleStrikethrough ]
                 [ text "--" ]
             ]
         ]
@@ -184,23 +193,13 @@ viewDesc : Model -> Html Msg
 viewDesc model =
     span
         [ classList
-            [ ( "description", True )
-            , ( "editing", model.editing )
-            ]
+            [ ( "description", True ) ]
         ]
-        [ input
-            [ placeholder "Observation"
-            , value model.description
-            , onEnter (ForSelf Editing)
-            , onInput (ForSelf << Update)
-            , class "edit"
-            ]
-            []
-        , span
-            [ onDoubleClick (ForSelf Editing)
+        [ span
+            [ onInput Update
             , classList
                 [ ( "view", True )
-                , ( "struck", not model.isActive )
+                , ( "struck", not model.struck )
                 ]
             ]
             [ text model.description ]
@@ -211,18 +210,18 @@ viewCounter : Model -> Html Msg
 viewCounter model =
     span [ class "obs-counter" ]
         [ button
-            [ onClick (ForSelf Increment)
+            [ onClick Increment
             , class "increment"
             ]
             [ case model.kind of
-                "Positive" ->
+                FirstKind ->
                     text "+"
 
-                "Negative" ->
-                    text delta
-
-                _ ->
+                SecondKind ->
                     text "*"
+
+                ThirdKind ->
+                    text Util.delta
             ]
         , div [ class "count" ] [ text (toString model.count) ]
         ]
@@ -232,18 +231,13 @@ viewCounter model =
 -- UTILITIES
 
 
-delta : String
-delta =
-    String.fromChar <| Char.fromCode 916
-
-
 hue : Kind -> String
 hue kind =
     case kind of
-        "Positive" ->
+        FirstKind ->
             "115"
 
-        "Negative" ->
+        ThirdKind ->
             "0"
 
         _ ->
@@ -262,23 +256,11 @@ lightness counter =
 obsValue : Model -> Int
 obsValue behavior =
     case behavior.kind of
-        "Positive" ->
+        FirstKind ->
             behavior.count
 
-        "Negative" ->
+        ThirdKind ->
             behavior.count * -1
 
         _ ->
             0
-
-
-onEnter : Msg -> Attribute Msg
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.succeed msg
-            else
-                Json.fail "not ENTER"
-    in
-        on "keydown" (Json.andThen isEnter keyCode)

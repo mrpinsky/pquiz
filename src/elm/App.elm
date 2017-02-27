@@ -23,7 +23,7 @@ import Quiz as PQ
 
 {-| The Program
 -}
-main : Program { user : Maybe User, quiz : Maybe PQ.Model } Model Msg
+main : Program { user : Maybe User, quiz : Maybe Decode.Value } Model Msg
 main =
     Navigation.programWithFlags
         (always NoOp)
@@ -34,7 +34,7 @@ main =
         }
 
 
-port setLocalStorage : PQ.Model -> Cmd msg
+port saveQuizLocal : Encode.Value -> Cmd msg
 
 
 port cacheUserData : String -> Cmd msg
@@ -84,9 +84,13 @@ baseModel =
     Model (LoginInfo "" "") Nothing (PQ.init Nothing)
 
 
-init : { quiz : Maybe PQ.Model, user : Maybe User } -> Navigation.Location -> ( Model, Cmd Msg )
+init : { quiz : Maybe Encode.Value, user : Maybe User } -> Navigation.Location -> ( Model, Cmd Msg )
 init { quiz, user } _ =
-    ( Model (LoginInfo "" "") user (PQ.init quiz), Cmd.none )
+    let
+        actualQuiz =
+            PQ.init quiz
+    in
+        ( Model (LoginInfo "" "") user actualQuiz, Cmd.none )
 
 
 
@@ -98,10 +102,12 @@ type Msg
       -- | LoadedModel (Result Http.Error String)
     | SendLoginRequest
     | RegisterLogin (Result Http.Error User)
+    | Toast (Result Http.Error Bool)
+    | SaveQuiz
     | NoOp
 
 
-{-| We want to `setLocalStorage` on every update. This function adds the setLocalStorage
+{-| We want to `saveQuizLocal` on every update. This function adds the saveQuizLocal
 command for every step of the update function.
 -}
 updateWithStorage : Msg -> Model -> ( Model, Cmd Msg )
@@ -112,7 +118,7 @@ updateWithStorage msg model =
     in
         ( newModel
         , Cmd.batch
-            [ setLocalStorage newModel.quiz
+            [ saveQuizLocal <| PQ.toJSON newModel.quiz
             , cmds
             ]
         )
@@ -123,10 +129,22 @@ update msg model =
     case msg of
         ChildMsg pqMsg ->
             let
-                ( quiz, cmds ) =
+                ( quiz, qCmds, toFocus ) =
                     PQ.update pqMsg model.quiz
+
+                cmds =
+                    let
+                        childCmds =
+                            Cmd.map ChildMsg qCmds
+                    in
+                        case toFocus of
+                            Nothing ->
+                                childCmds
+
+                            Just elId ->
+                                Cmd.batch [ focus elId, childCmds ]
             in
-                ( { model | quiz = quiz }, Cmd.map ChildMsg cmds )
+                ( { model | quiz = quiz }, cmds )
 
         SendLoginRequest ->
             ( { model | login = LoginInfo "" "" }
@@ -139,8 +157,42 @@ update msg model =
         RegisterLogin (Err _) ->
             ( model, Cmd.none )
 
+        SaveQuiz ->
+            case model.user of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just user ->
+                    ( model, saveQuiz user.token model.quiz )
+
+        Toast result ->
+            model ! []
+
         NoOp ->
             model ! []
+
+
+saveQuiz : String -> PQ.Model -> Cmd Msg
+saveQuiz token quiz =
+    let
+        ( method, quizId ) =
+            case quiz.id of
+                Nothing ->
+                    ( "POST", "" )
+
+                Just id ->
+                    ( "PATCH", toString quiz.id )
+    in
+        Http.request
+            { method = method
+            , headers = [ Http.header "Authorization" token ]
+            , url = "http://localhost:4000/api/quizzes/" ++ quizId
+            , body = Http.jsonBody <| PQ.toJSON quiz
+            , expect = Http.expectJson Decode.bool
+            , timeout = Nothing
+            , withCredentials = False
+            }
+            |> Http.send Toast
 
 
 logInRequest : LoginInfo -> Http.Request User
@@ -177,6 +229,11 @@ expectUser =
 -- VIEW
 
 
+(=>) : String -> String -> ( String, String )
+(=>) a b =
+    ( a, b )
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -191,21 +248,34 @@ view model =
 
 navbar : Maybe User -> Html Msg
 navbar user =
+    div
+        [ style
+            [ "background" => "black"
+            , "color" => "white"
+            , "display" => "flex"
+            , "flex" => "0 0 row"
+            , "align-items" => "flex-end"
+            ]
+        ]
+        (navbarContents user)
+
+
+navbarContents : Maybe User -> List (Html Msg)
+navbarContents user =
     case user of
         Nothing ->
-            div
-                [ style
-                    [ ( "background", "black" )
-                    , ( "color", "white" )
-                    ]
-                ]
-                [ button [ onClick SendLoginRequest ] [ text "login" ] ]
+            [ button [ onClick SendLoginRequest ] [ text "login" ] ]
 
         Just userData ->
-            div
-                [ style
-                    [ ( "background", "black" )
-                    , ( "color", "white" )
-                    ]
-                ]
-                [ text userData.name ]
+            [ saveButton
+            , text userData.name
+            ]
+
+
+saveButton : Html Msg
+saveButton =
+    div
+        [ style [ "background" => "white", "color" => "black" ]
+        , onClick SaveQuiz
+        ]
+        [ text "save quiz" ]

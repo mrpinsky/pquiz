@@ -19,8 +19,8 @@ gulp.task('build:frontend',
     'clean:frontend',
     gulp.parallel(
       elm.build,
-      scripts.build,
-      styles.build
+      scripts.build // ,
+      // styles.build
     ),
     inject.build
   )

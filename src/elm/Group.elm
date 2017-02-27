@@ -1,14 +1,14 @@
-module Group exposing (Model, InternalMsg(SetScoreDisplay), init, Translator, translator, update, view, viewWithRemoveButton)
+module Group exposing (Model, Msg(SetScoreDisplay), init, update, viewWithRemoveButton, toJSON, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
-import Json.Decode as Json
+import Json.Encode as Encode
+import Json.Decode as Decode
 import Observation as Observation
-import Char
-import String
+import Util
 
 
 -- MODEL
@@ -17,14 +17,50 @@ import String
 type alias Model =
     { name : String
     , observations : List Observation.Model
-    , obs : String
-    , obsKind : Int
-    , enteringObs : Bool
+    , currentObs : Maybe ProtoObs
     , showTally : Bool
-    , myId : Int
+    , id : Int
     , nextObsId : Int
     , total : Int
     }
+
+
+type alias ProtoObs =
+    { kind : Int
+    , text : String
+    }
+
+
+toJSON : Model -> Encode.Value
+toJSON model =
+    Encode.object
+        [ ( "name", Encode.string model.name )
+        , ( "observations"
+          , Encode.list <| List.map Observation.toJSON model.observations
+          )
+        , ( "currentObs", Encode.null )
+        ]
+
+
+decoder : Decode.Decoder Model
+decoder =
+    Decode.map7
+        Model
+        (Decode.field "name" Decode.string)
+        (Decode.field "observations" <| Decode.list Observation.decoder)
+        (Decode.maybe <| Decode.field "currentObs" decodeProtoObs)
+        (Decode.field "showTally" Decode.bool)
+        (Decode.field "id" Decode.int)
+        (Decode.field "nextObsId" Decode.int)
+        (Decode.field "total" Decode.int)
+
+
+decodeProtoObs : Decode.Decoder ProtoObs
+decodeProtoObs =
+    Decode.map2
+        ProtoObs
+        (Decode.field "kind" Decode.int)
+        (Decode.field "text" Decode.string)
 
 
 init : String -> Int -> Model
@@ -34,12 +70,10 @@ init name id =
             []
     in
         { name = name
+        , currentObs = Nothing
         , observations = newObsList
-        , obs = ""
-        , obsKind = 0
-        , enteringObs = False
         , showTally = True
-        , myId = id
+        , id = id
         , nextObsId = 0
         , total = 0
         }
@@ -50,117 +84,100 @@ init name id =
 
 
 type Msg
-    = ForSelf InternalMsg
-    | ForParent OutMsg
-
-
-type InternalMsg
-    = EditingNew Int
+    = CreateNew Int
     | UpdateNew String
-    | Create
-    | RemoveObs Int
-    | UpdateExisting Int Observation.InternalMsg
+    | SaveNew
+    | UpdateExisting Int Observation.Msg
     | SetScoreDisplay Bool
-
-
-type OutMsg
-    = Remove
-
-
-obsTranslator : Int -> Observation.Translator InternalMsg
-obsTranslator id =
-    Observation.translator { onInternalMessage = UpdateExisting id, onRemove = RemoveObs id }
-
-
-type alias TranslationDictionary parentMsg =
-    { onInternalMessage : InternalMsg -> parentMsg
-    , onRemove : parentMsg
-    }
-
-
-type alias Translator parentMsg =
-    Msg -> parentMsg
-
-
-translator : TranslationDictionary parentMsg -> Translator parentMsg
-translator { onInternalMessage, onRemove } msg =
-    case msg of
-        ForSelf internal ->
-            onInternalMessage internal
-
-        ForParent Remove ->
-            onRemove
+    | Delete
 
 
 
 -- UPDATE
 
 
-update : InternalMsg -> Model -> Model
+update : Msg -> Model -> ( Model, Maybe Int )
 update msg model =
     case msg of
-        EditingNew kind ->
-            { model
-                | enteringObs = True
-                , obsKind = kind
-            }
+        CreateNew kind ->
+            ( { model | currentObs = Just <| ProtoObs kind "" }, Nothing )
 
-        UpdateNew obs ->
-            { model | obs = obs }
+        UpdateNew text ->
+            ( { model
+                | currentObs =
+                    Maybe.map2
+                        editObservation
+                        (Just text)
+                        model.currentObs
+              }
+            , Nothing
+            )
 
-        Create ->
-            if model.obs == "" then
-                { model | enteringObs = False }
-            else
-                let
-                    newObs =
-                        Observation.init model.obs model.obsKind model.nextObsId
-                in
-                    { model
-                        | obs = ""
-                        , observations = newObs :: model.observations
-                        , enteringObs = False
-                        , nextObsId = model.nextObsId + 1
-                        , total = model.total + (Observation.obsValue newObs)
-                    }
+        SaveNew ->
+            case model.currentObs of
+                Nothing ->
+                    ( model, Nothing )
 
-        RemoveObs id ->
-            let
-                newObservations =
-                    List.filter (\obs -> obs.id /= id) model.observations
-            in
-                { model
-                    | observations = newObservations
-                    , total = List.sum <| List.map Observation.obsValue newObservations
-                }
+                Just obs ->
+                    if obs.text == "" then
+                        ( { model | currentObs = Nothing }, Nothing )
+                    else
+                        let
+                            newObs =
+                                Observation.init obs.text obs.kind model.nextObsId
+                        in
+                            ( { model
+                                | currentObs = Nothing
+                                , observations = newObs :: model.observations
+                                , nextObsId = model.nextObsId + 1
+                                , total = model.total + (Observation.obsValue newObs)
+                              }
+                            , Nothing
+                            )
 
         UpdateExisting id msg ->
             let
-                updateObs obs =
-                    if obs.id == id then
-                        Observation.update msg obs
-                    else
-                        obs
+                updates =
+                    List.map (updateHelper id msg) model.observations
+
+                toRemove =
+                    List.filterMap Tuple.second updates
 
                 newObservations =
-                    List.map updateObs model.observations
+                    List.map Tuple.first updates
+                        |> List.filter (\obs -> not <| List.member obs.id toRemove)
             in
-                { model
+                ( { model
                     | observations = newObservations
-                    , total = List.sum <| List.map Observation.obsValue newObservations
-                }
+                    , total =
+                        List.map Observation.obsValue newObservations
+                            |> List.sum
+                  }
+                , Nothing
+                )
 
         SetScoreDisplay tallyState ->
-            { model | showTally = tallyState }
+            ( { model | showTally = tallyState }, Nothing )
+
+        Delete ->
+            ( model, Just model.id )
+
+
+updateHelper : Int -> Observation.Msg -> Observation.Model -> ( Observation.Model, Maybe Int )
+updateHelper id msg obs =
+    if obs.id == id then
+        Observation.update msg obs
+    else
+        ( obs, Nothing )
+
+
+editObservation : String -> { kind : Int, text : String } -> { kind : Int, text : String }
+editObservation newText observation =
+    { observation | text = newText }
 
 
 
 -- VIEW
-
-
-(=>) : a -> b -> ( a, b )
-(=>) =
-    (,)
 
 
 view : Model -> Html Msg
@@ -168,7 +185,7 @@ view model =
     div [ class "group" ]
         [ lazy viewTitle model.name
         , lazy viewTotal model
-        , lazy viewInput model
+        , lazy2 viewInput model.currentObs model.id
         , lazy viewObservations model.observations
         ]
 
@@ -184,68 +201,75 @@ viewTitle title =
 
 viewTotal : Model -> Html Msg
 viewTotal model =
-    model.total
-        |> toString
-        |> text
-        |> listify
-        |> h2
-            [ classList
-                [ ( "points", True )
-                , ( "total-" ++ (toString <| clamp 0 10 <| abs model.total), True )
-                , ( "hidden", not model.showTally )
-                , ( "pos", model.total > 0 )
-                ]
-            ]
-
-
-viewInput : Model -> Html Msg
-viewInput model =
-    div
+    h2
         [ classList
-            [ ( "group-input", True )
-            , ( "entering", model.enteringObs )
+            [ ( "points", True )
+            , ( "total-" ++ (toString <| clamp 0 10 <| abs model.total), True )
+            , ( "hidden", not model.showTally )
+            , ( "pos", model.total > 0 )
             ]
         ]
-        [ input
-            [ placeholder "Observation"
-            , value model.obs
-            , onEnter <| ForSelf Create
-            , onInput <| (ForSelf << UpdateNew)
-            , id <| "input-group-" ++ (toString model.myId)
-            , class "enter"
-            ]
-            []
-        , div [ class "buttons" ]
-            [ button
-                [ onClick (ForSelf <| EditingNew 1)
-                , class "input-button first-kind"
-                ]
-                [ text "+" ]
-            , button
-                [ onClick (ForSelf <| EditingNew 2)
-                , class "input-button second-kind"
-                ]
-                [ text "*" ]
-            , button
-                [ onClick (ForSelf <| EditingNew 3)
-                , class "input-button third-kind"
-                ]
-                [ text <| String.fromChar <| Char.fromCode 916 ]
-            ]
+        (model.total
+            |> toString
+            |> text
+            |> Util.listify
+        )
+
+
+viewButton : Int -> String -> Html Msg
+viewButton kind label =
+    button
+        [ onClick <| CreateNew kind
+        , class "input-button"
+          -- , class <| ((ordinal kind) ++ "-kind input-button")
         ]
+        [ text label ]
+
+
+viewButtons : Html Msg
+viewButtons =
+    div [ class "buttons" ]
+        [ viewButton 1 "+"
+        , viewButton 2 "*"
+        , viewButton 3 Util.delta
+        ]
+
+
+viewInput : Maybe ProtoObs -> Int -> Html Msg
+viewInput mObs id =
+    let
+        contents =
+            case mObs of
+                Nothing ->
+                    viewButtons
+
+                Just obs ->
+                    input
+                        [ placeholder "Observation"
+                        , value obs.text
+                        , Util.onEnter SaveNew
+                        , onInput UpdateNew
+                        , Html.Attributes.id <| "input-group-" ++ (toString id)
+                        , class "enter"
+                        ]
+                        []
+    in
+        div [ class "group-input" ] [ contents ]
 
 
 viewObservations : List Observation.Model -> Html Msg
 viewObservations os =
     section []
-        [ List.map (\o -> ( "obs-" ++ (toString o.id), viewKeyedObservation o )) os
-            |> Keyed.ul [ class "observation-list" ]
+        [ Keyed.ul [ class "observation-list" ] <|
+            List.map
+                (\o -> ( "obs-" ++ (toString o.id), viewKeyedObservation o ))
+                os
         ]
 
 
 viewKeyedObservation : Observation.Model -> Html Msg
 viewKeyedObservation obs =
-    Html.map (ForSelf << obsTranslator obs.id) (Observation.viewWithRemoveButton obs)
+    Html.map (UpdateExisting obs.id) (Observation.viewWithRemoveButton obs)
 
 
 viewWithRemoveButton : Int -> Model -> Html Msg
@@ -253,34 +277,13 @@ viewWithRemoveButton numAcross model =
     div [ class <| "group-box-" ++ (toString numAcross) ]
         [ div [ class "group" ]
             [ button
-                [ onClick (ForParent Remove)
+                [ onClick Delete
                 , class "remove"
                 ]
                 [ text "×" ]
             , lazy viewTitle model.name
             , lazy viewTotal model
-            , lazy viewInput model
+            , lazy2 viewInput model.currentObs model.id
             , lazy viewObservations model.observations
             ]
         ]
-
-
-
--- UTILITIES
-
-
-listify : a -> List a
-listify item =
-    [ item ]
-
-
-onEnter : Msg -> Attribute Msg
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.succeed msg
-            else
-                Json.fail "not ENTER"
-    in
-        on "keydown" (Json.andThen isEnter keyCode)
