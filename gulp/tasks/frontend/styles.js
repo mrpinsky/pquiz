@@ -14,8 +14,13 @@ function buildStyles() {
   .pipe(gulp.dest(path.join(config.frontend.dest, 'styles')));
 }
 
+function buildBootstrap() {
+  return gulp.src('node_modules/bootstrap/dist/css/bootstrap.css')
+  .pipe(gulp.dest(path.join(config.frontend.dest, 'styles')));
+}
+
 module.exports = {
-  build: buildStyles,
+  build: buildBootstrap,
   watch: saneWatch({
     label: 'Frontend Styles',
     path: config.styles.src,

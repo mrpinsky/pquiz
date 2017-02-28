@@ -181,44 +181,40 @@ view : Model -> Html Msg
 view model =
     div []
         [ lazy viewMenu model
-        , div [ class "groups-list" ]
-            (List.map (viewIndexedGroup model.numAcross) model.groups)
+        , div [] (List.map (viewIndexedGroup model.numAcross) model.groups)
         ]
 
 
 viewMenu : Model -> Html Msg
 viewMenu model =
-    div [ class "menu" ]
-        [ button
-            [ onClick (Create (toString model.nextID))
-            , class "menu-button"
-            ]
-            [ text "Add Group" ]
-        , button
-            [ onClick Reset
-            , class "menu-button"
-            ]
-            [ text "Reset All Groups" ]
-        , button
-            [ onClick (SetTallyDisplays True)
-            , class "menu-button"
-            ]
-            [ text "Show Point Tallies" ]
-        , button
-            [ onClick (SetTallyDisplays False)
-            , class "menu-button"
-            ]
-            [ text "Hide Point Tallies" ]
-        , span [ class "layout-option" ]
-            [ text "Groups per Row: "
-            , button [ onClick (SetNumAcross 3) ]
-                [ text "3" ]
-            , button [ onClick (SetNumAcross 4) ]
-                [ text "4" ]
-            , button [ onClick (SetNumAcross 5) ]
-                [ text "5" ]
-            ]
+    div []
+        [ menuButton (Create (toString model.nextID)) "Add Group"
+        , menuButton Reset "Reset All Groups"
+        , menuButton (SetTallyDisplays True) "Show Point Tallies"
+        , menuButton (SetTallyDisplays False) "Hide Point Tallies"
+        , List.map numAcrossButton [ 3, 4, 5 ]
+            |> List.append [ text "Groups per Row: " ]
+            |> span []
         ]
+
+
+styledButton : String -> Msg -> String -> Html Msg
+styledButton styles msg label =
+    button
+        [ onClick msg
+        , class styles
+        ]
+        [ text label ]
+
+
+menuButton : Msg -> String -> Html Msg
+menuButton msg label =
+    styledButton "menu-button" msg label
+
+
+numAcrossButton : Int -> Html Msg
+numAcrossButton numAcross =
+    styledButton "" (SetNumAcross numAcross) <| toString numAcross
 
 
 viewIndexedGroup : Int -> G.Model -> Html Msg

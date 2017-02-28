@@ -220,8 +220,7 @@ viewButton : Int -> String -> Html Msg
 viewButton kind label =
     button
         [ onClick <| CreateNew kind
-        , class "input-button"
-          -- , class <| ((ordinal kind) ++ "-kind input-button")
+        , class <| ((Util.ordinal kind) ++ "-kind input-button")
         ]
         [ text label ]
 
@@ -236,31 +235,33 @@ viewButtons =
 
 
 viewInput : Maybe ProtoObs -> Int -> Html Msg
-viewInput mObs id =
+viewInput obs id =
     let
-        contents =
-            case mObs of
+        ( text, editing ) =
+            case obs of
                 Nothing ->
-                    viewButtons
+                    ( "", False )
 
                 Just obs ->
-                    input
-                        [ placeholder "Observation"
-                        , value obs.text
-                        , Util.onEnter SaveNew
-                        , onInput UpdateNew
-                        , Html.Attributes.id <| "input-group-" ++ (toString id)
-                        , class "enter"
-                        ]
-                        []
+                    ( obs.text, True )
     in
-        div [ class "group-input" ] [ contents ]
+        div [ classList [ ( "group-input", True ), ( "editing", editing ) ] ]
+            [ viewButtons
+            , input
+                [ placeholder "Observation"
+                , value text
+                , Util.onEnter SaveNew
+                , onInput UpdateNew
+                , Html.Attributes.id <| "input-group-" ++ (toString id)
+                ]
+                []
+            ]
 
 
 viewObservations : List Observation.Model -> Html Msg
 viewObservations os =
     section []
-        [ Keyed.ul [ class "observation-list" ] <|
+        [ Keyed.ul [] <|
             List.map
                 (\o -> ( "obs-" ++ (toString o.id), viewKeyedObservation o ))
                 os
@@ -274,12 +275,10 @@ viewKeyedObservation obs =
 
 viewWithRemoveButton : Int -> Model -> Html Msg
 viewWithRemoveButton numAcross model =
-    div [ class <| "group-box-" ++ (toString numAcross) ]
-        [ div [ class "group" ]
+    div []
+        [ div []
             [ button
-                [ onClick Delete
-                , class "remove"
-                ]
+                [ onClick Delete ]
                 [ text "×" ]
             , lazy viewTitle model.name
             , lazy viewTotal model

@@ -27,6 +27,22 @@ listify item =
     [ item ]
 
 
+ordinal : Int -> String
+ordinal n =
+    case n of
+        1 ->
+            "first"
+
+        2 ->
+            "second"
+
+        3 ->
+            "third"
+
+        _ ->
+            "nth"
+
+
 delta : String
 delta =
     String.fromChar <| Char.fromCode 916

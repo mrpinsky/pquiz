@@ -149,36 +149,25 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div
-        [ classList
-            [ ( "observation", True )
-            , ( "kind-" ++ (toString <| kindToInt model.kind), True )
-            , ( "count-" ++ (toString model.count), model.count < 6 )
-            ]
-        ]
+        []
         [ viewCounter model
-        , div
-            [ class "right-buttons"
-            ]
-            [ button [ onClick ToggleStrikethrough ]
+        , div []
+            [ button
+                [ onClick ToggleStrikethrough ]
                 [ text "--" ]
             ]
-        , div [ class "description" ] [ viewDesc model ]
+        , div [] [ viewDesc model ]
         ]
 
 
 viewWithRemoveButton : Model -> Html Msg
 viewWithRemoveButton model =
     li
-        [ classList
-            [ ( "observation", True )
-            , ( "kind-" ++ (toString <| kindToInt model.kind), True )
-            , ( "count-" ++ (toString model.count), model.count < 6 )
-            ]
-        ]
+        []
         [ viewCounter model
         , viewDesc model
         , span
-            [ class "right-buttons" ]
+            []
             [ button
                 [ onClick Delete ]
                 [ text "×" ]
@@ -192,27 +181,18 @@ viewWithRemoveButton model =
 viewDesc : Model -> Html Msg
 viewDesc model =
     span
-        [ classList
-            [ ( "description", True ) ]
-        ]
+        [ contenteditable True ]
         [ span
-            [ onInput Update
-            , classList
-                [ ( "view", True )
-                , ( "struck", not model.struck )
-                ]
-            ]
+            [ onInput Update ]
             [ text model.description ]
         ]
 
 
 viewCounter : Model -> Html Msg
 viewCounter model =
-    span [ class "obs-counter" ]
+    span []
         [ button
-            [ onClick Increment
-            , class "increment"
-            ]
+            [ onClick Increment ]
             [ case model.kind of
                 FirstKind ->
                     text "+"
@@ -223,7 +203,7 @@ viewCounter model =
                 ThirdKind ->
                     text Util.delta
             ]
-        , div [ class "count" ] [ text (toString model.count) ]
+        , div [] [ text (toString model.count) ]
         ]
 
 
