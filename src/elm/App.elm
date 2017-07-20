@@ -19,6 +19,7 @@ import Json.Decode as Decode
 -- import Html.Lazy exposing (..)
 
 import Quiz as PQ
+import Util exposing (onContentEdit, (=>))
 
 
 {-| The Program
@@ -132,17 +133,16 @@ update msg model =
                 ( quiz, qCmds, toFocus ) =
                     PQ.update pqMsg model.quiz
 
-                cmds =
-                    let
-                        childCmds =
-                            Cmd.map ChildMsg qCmds
-                    in
-                        case toFocus of
-                            Nothing ->
-                                childCmds
+                childCmds =
+                    Cmd.map ChildMsg qCmds
 
-                            Just elId ->
-                                Cmd.batch [ focus elId, childCmds ]
+                cmds =
+                    case toFocus of
+                        Nothing ->
+                            childCmds
+
+                        Just elId ->
+                            Cmd.batch [ focus elId, childCmds ]
             in
                 ( { model | quiz = quiz }, cmds )
 
@@ -229,25 +229,20 @@ expectUser =
 -- VIEW
 
 
-(=>) : String -> String -> ( String, String )
-(=>) a b =
-    ( a, b )
-
-
 view : Model -> Html Msg
 view model =
     let
-        msg =
+        quizView =
             PQ.view model.quiz
     in
         div []
-            [ navbar model.user
-            , Html.map ChildMsg msg
+            [ navbar model.quiz model.user
+            , Html.map ChildMsg quizView
             ]
 
 
-navbar : Maybe User -> Html Msg
-navbar user =
+navbar : PQ.Model -> Maybe User -> Html Msg
+navbar quiz user =
     div
         [ style
             [ "background" => "black"
@@ -257,17 +252,28 @@ navbar user =
             , "align-items" => "flex-end"
             ]
         ]
-        (navbarContents user)
+        (navbarContents quiz user)
 
 
-navbarContents : Maybe User -> List (Html Msg)
-navbarContents user =
+title : String -> Html Msg
+title t =
+    div
+        [ contenteditable True
+        , onContentEdit (PQ.Rename >> ChildMsg)
+        , style [ "width" => "50%" ]
+        ]
+        [ text t ]
+
+
+navbarContents : PQ.Model -> Maybe User -> List (Html Msg)
+navbarContents quiz user =
     case user of
         Nothing ->
             [ button [ onClick SendLoginRequest ] [ text "login" ] ]
 
         Just userData ->
-            [ saveButton
+            [ title quiz.title
+            , saveButton
             , text userData.name
             ]
 
@@ -275,7 +281,11 @@ navbarContents user =
 saveButton : Html Msg
 saveButton =
     div
-        [ style [ "background" => "white", "color" => "black" ]
+        [ style
+            [ "background" => "white"
+            , "color" => "black"
+            , "padding" => "5px"
+            ]
         , onClick SaveQuiz
         ]
         [ text "save quiz" ]

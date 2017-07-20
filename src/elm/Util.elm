@@ -22,11 +22,6 @@ encodeMaybe encoder maybe =
             encoder x
 
 
-listify : a -> List a
-listify item =
-    [ item ]
-
-
 ordinal : Int -> String
 ordinal n =
     case n of
@@ -43,9 +38,24 @@ ordinal n =
             "nth"
 
 
+stringFromCode : Int -> String
+stringFromCode =
+    Char.fromCode >> String.fromChar
+
+
 delta : String
 delta =
-    String.fromChar <| Char.fromCode 916
+    stringFromCode 916
+
+
+emdash : String
+emdash =
+    stringFromCode 8212
+
+
+checkmark : String
+checkmark =
+    stringFromCode 10004
 
 
 onEnter : msg -> Attribute msg
@@ -58,3 +68,12 @@ onEnter msg =
                 Decode.fail "not ENTER"
     in
         on "keydown" (Decode.andThen isEnter keyCode)
+
+
+onContentEdit : (String -> msg) -> Attribute msg
+onContentEdit msg =
+    let
+        innerHtmlDecoder =
+            Decode.at [ "target", "innerHTML" ] Decode.string
+    in
+        on "blur" (Decode.map msg innerHtmlDecoder)

@@ -1,12 +1,18 @@
-module Quiz exposing (Model, Msg, init, update, view, toJSON)
+module Quiz exposing (Model, Msg(Rename), init, update, view, toJSON)
+
+-- Elm Packages
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (..)
 import Html.Lazy exposing (..)
-import Group as G
 import Json.Encode as Encode
 import Json.Decode as Decode
+
+
+-- Local Files
+
+import Group as G
 import Util
 
 
@@ -15,6 +21,7 @@ import Util
 
 type alias Model =
     { id : Maybe Int
+    , title : String
     , groups : List G.Model
     , nextID : Int
     , numAcross : Int
@@ -25,6 +32,7 @@ toJSON : Model -> Encode.Value
 toJSON model =
     Encode.object
         [ ( "id", Util.encodeMaybe Encode.int model.id )
+        , ( "title", Encode.string model.title )
         , ( "groups", Encode.list <| List.map G.toJSON model.groups )
         , ( "nextID", Encode.int model.nextID )
         , ( "numAcross", Encode.int model.numAcross )
@@ -47,9 +55,10 @@ fromJSON json =
 
 decoder : Decode.Decoder Model
 decoder =
-    Decode.map4
+    Decode.map5
         Model
         (Decode.maybe <| Decode.field "id" Decode.int)
+        (Decode.field "title" Decode.string)
         (Decode.field "groups" <| Decode.list G.decoder)
         (Decode.field "nextID" Decode.int)
         (Decode.field "numAcross" Decode.int)
@@ -58,6 +67,7 @@ decoder =
 baseModel : Model
 baseModel =
     { id = Nothing
+    , title = "Unnamed Quiz"
     , groups = List.map (\n -> G.init (toString n) n) (List.range 1 8)
     , nextID = 9
     , numAcross = 4
@@ -88,7 +98,8 @@ init json =
 
 
 type Msg
-    = UpdateGroup Int G.Msg
+    = Rename String
+    | UpdateGroup Int G.Msg
     | Reset
     | Create String
     | Remove Int
@@ -103,6 +114,16 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg, Maybe String )
 update msg model =
     case msg of
+        Rename maybeTitle ->
+            let
+                title =
+                    if maybeTitle == "" then
+                        "Untitled Quiz"
+                    else
+                        maybeTitle
+            in
+                ( { model | title = title }, Cmd.none, Nothing )
+
         UpdateGroup id groupMsg ->
             let
                 updates =
