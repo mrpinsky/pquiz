@@ -5,41 +5,32 @@ import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
-import Json.Encode as Encode
 import Json.Decode as Decode
-import Observation as Observation
-import Util
+import Json.Encode as Encode
+import Observation as Obs exposing (Observation)
+import Util exposing (TrackedList)
 
 
 -- MODEL
 
 
 type alias Model =
-    { name : String
-    , observations : List Observation.Model
-    , currentObs : Maybe ProtoObs
-    , showTally : Bool
-    , id : Int
-    , nextObsId : Int
-    , total : Int
+    { group : Group
+    , config : Config
     }
 
 
-type alias ProtoObs =
-    { kind : Int
-    , text : String
-    }
+type Group
+    = Group String (Maybe Observation) Int (TrackedList Observation)
 
 
-toJSON : Model -> Encode.Value
-toJSON model =
-    Encode.object
-        [ ( "name", Encode.string model.name )
-        , ( "observations"
-          , Encode.list <| List.map Observation.toJSON model.observations
-          )
-        , ( "currentObs", Encode.null )
-        ]
+type alias Config =
+    { showTally : Bool }
+
+
+initGroup : String -> List Observation -> Model
+initGroup name observations =
+    Group name Nothing (Util.track observations)
 
 
 decoder : Decode.Decoder Model
@@ -61,22 +52,6 @@ decodeProtoObs =
         ProtoObs
         (Decode.field "kind" Decode.int)
         (Decode.field "text" Decode.string)
-
-
-init : String -> Int -> Model
-init name id =
-    let
-        newObsList =
-            []
-    in
-        { name = name
-        , currentObs = Nothing
-        , observations = newObsList
-        , showTally = True
-        , id = id
-        , nextObsId = 0
-        , total = 0
-        }
 
 
 

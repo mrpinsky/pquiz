@@ -1,7 +1,7 @@
-module Observation exposing (..)
+module Observation exposing (Observation, Kind, Msg, decoder, encode, init, update, view)
 
-import Array
-import Config.Quiz exposing (Config, Kind)
+import Dict
+import Config.Quiz as Config
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
@@ -14,7 +14,11 @@ import Util exposing ((=>), checkmark, emdash)
 
 
 type Observation
-    = Observation Int String State
+    = Observation Kind String State
+
+
+type Kind
+    = Kind String
 
 
 type State
@@ -22,9 +26,14 @@ type State
     | Active Int
 
 
-init : Int -> String -> Observation
-init kindIndex label =
-    Observation kindIndex label (Active 1)
+init : Kind -> String -> Int -> Observation
+init kind label tally =
+    Observation kind label (Active tally)
+
+
+kindDecoder : Decoder Kind
+kindDecoder =
+    Decode.map Kind Decode.string
 
 
 stateDecoder : Decoder State
@@ -36,35 +45,30 @@ decoder : Decoder Observation
 decoder =
     Decode.map3
         Observation
-        (Decode.field "kind" Decode.int)
+        (Decode.field "kind" kindDecoder)
         (Decode.field "label" Decode.string)
         (Decode.field "state" stateDecoder)
 
 
 encode : Observation -> Encode.Value
-encode (Observation kind label state) =
+encode (Observation (Kind kind) label state) =
     Encode.object
-        [ "kind" => Encode.int kind
-        , "label" => Encode.string label
+        [ "kind" => Encode.string kind
         , "state" => Encode.int (stateToInt state)
+        , "label" => Encode.string label
         ]
 
 
 encodeState : State -> Encode.Value
 encodeState state =
-    case state of
-        Struck ->
-            Encode.int 0
-
-        Active tally ->
-            Encode.int tally
+    stateToInt state |> Encode.int
 
 
 stateToInt : State -> Int
 stateToInt state =
     case state of
         Struck ->
-            0
+            -1
 
         Active tally ->
             tally
@@ -72,10 +76,10 @@ stateToInt state =
 
 stateFromInt : Int -> State
 stateFromInt tally =
-    if tally > 0 then
-        Active tally
-    else
+    if tally < 0 then
         Struck
+    else
+        Active tally
 
 
 
@@ -89,35 +93,35 @@ type Msg
 
 
 update : Msg -> Observation -> Observation
-update msg (Observation kindIndex label state) =
+update msg (Observation kind label state) =
     case msg of
         Relabel newLabel ->
-            Observation kindIndex newLabel state
+            Observation kind newLabel state
 
         Increment ->
             case state of
                 Struck ->
-                    Observation kindIndex label Struck
+                    Observation kind label Struck
 
                 Active tally ->
                     tally
                         + 1
                         |> Active
-                        |> Observation kindIndex label
+                        |> Observation kind label
 
         Strike ->
-            Observation kindIndex label Struck
+            Observation kind label Struck
 
 
 
 -- VIEW
 
 
-view : Config -> Observation -> Html Msg
-view config (Observation kindIndex label state) =
+view : Config.Config -> Observation -> Html Msg
+view config (Observation (Kind kindName) label state) =
     let
         kind =
-            Array.get kindIndex config.kinds
+            Dict.get kindName config.kinds
 
         symbol =
             kind

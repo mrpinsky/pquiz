@@ -1,6 +1,6 @@
 module Config.Quiz exposing (..)
 
-import Array exposing (Array)
+import Dict exposing (Dict)
 import Css
 
 
@@ -12,4 +12,4 @@ type alias Kind =
 
 
 type alias Config =
-    { kinds : Array Kind }
+    { kinds : Dict String Kind }
