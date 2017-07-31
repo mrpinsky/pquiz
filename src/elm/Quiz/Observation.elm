@@ -1,7 +1,9 @@
-module Observation exposing (Observation, Kind, Msg, decoder, encode, init, update, view)
+module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relabel, update, view)
+
+-- import AllDict
 
 import Dict
-import Config.Quiz as Config
+import Quiz.Config as Config exposing (..)
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
@@ -14,11 +16,7 @@ import Util exposing ((=>), checkmark, emdash)
 
 
 type Observation
-    = Observation Kind String State
-
-
-type Kind
-    = Kind String
+    = Observation String String State
 
 
 type State
@@ -26,14 +24,20 @@ type State
     | Active Int
 
 
-init : Kind -> String -> Int -> Observation
+init : String -> String -> Int -> Observation
 init kind label tally =
     Observation kind label (Active tally)
 
 
-kindDecoder : Decoder Kind
-kindDecoder =
-    Decode.map Kind Decode.string
+relabel : String -> Observation -> Observation
+relabel newLabel (Observation kind label tally) =
+    Observation kind newLabel tally
+
+
+
+-- kindDecoder : Decoder Kind
+-- kindDecoder =
+--     Decode.map Kind Decode.string
 
 
 stateDecoder : Decoder State
@@ -45,13 +49,13 @@ decoder : Decoder Observation
 decoder =
     Decode.map3
         Observation
-        (Decode.field "kind" kindDecoder)
+        (Decode.field "kind" Decode.string)
         (Decode.field "label" Decode.string)
         (Decode.field "state" stateDecoder)
 
 
 encode : Observation -> Encode.Value
-encode (Observation (Kind kind) label state) =
+encode (Observation kind label state) =
     Encode.object
         [ "kind" => Encode.string kind
         , "state" => Encode.int (stateToInt state)
@@ -118,13 +122,13 @@ update msg (Observation kind label state) =
 
 
 view : Config.Config -> Observation -> Html Msg
-view config (Observation (Kind kindName) label state) =
+view config (Observation kind label state) =
     let
-        kind =
-            Dict.get kindName config.kinds
+        kindConfig =
+            Dict.get kind config.kinds
 
         symbol =
-            kind
+            kindConfig
                 |> Maybe.map (.symbol >> String.fromChar)
                 |> Maybe.withDefault checkmark
     in

@@ -1,10 +1,13 @@
 module Util exposing (..)
 
+import Char
+import Css
 import Html exposing (Attribute)
+import Html.Attributes
 import Html.Events exposing (on, keyCode)
 import Json.Encode as Encode
 import Json.Decode as Decode
-import Char
+import KeyedList exposing (KeyedList)
 
 
 (=>) : a -> b -> ( a, b )
@@ -77,3 +80,14 @@ onContentEdit msg =
             Decode.at [ "target", "innerHTML" ] Decode.string
     in
         on "blur" (Decode.map msg innerHtmlDecoder)
+
+
+styles : List Css.Style -> Html.Attribute msg
+styles =
+    Css.asPairs >> Html.Attributes.style
+
+
+keyedListDecoder : Decode.Decoder a -> Decode.Decoder (KeyedList a)
+keyedListDecoder decoder =
+    Decode.list decoder
+        |> Decode.map KeyedList.fromList
