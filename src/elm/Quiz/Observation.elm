@@ -1,8 +1,8 @@
-module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relabel, update, view)
+module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relabel, value, update, view)
 
 -- import AllDict
 
-import Dict
+import Dict exposing (Dict)
 import Quiz.Config as Config exposing (..)
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
@@ -32,6 +32,22 @@ init kind label tally =
 relabel : String -> Observation -> Observation
 relabel newLabel (Observation kind label tally) =
     Observation kind newLabel tally
+
+
+value : Dict String KindSettings -> Observation -> Int
+value kinds (Observation kind _ state) =
+    case state of
+        Struck ->
+            0
+
+        Active tally ->
+            let
+                weight =
+                    Dict.get kind kinds
+                        |> Maybe.map .weight
+                        |> Maybe.withDefault 1
+            in
+                tally * weight
 
 
 

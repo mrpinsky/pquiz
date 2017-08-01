@@ -38,7 +38,7 @@ testConfig =
                 ]
     in
         { kinds = kinds
-        , tally = False
+        , tally = True
         }
 
 
@@ -47,16 +47,21 @@ testConfig =
 
 
 type Group
-    = Group String (KeyedList Observation) (Maybe Observation)
+    = Group String (KeyedList Observation) State
+
+
+type State
+    = Waiting
+    | Entering String String
 
 
 init : String -> List Observation -> Group
 init label observations =
-    Group label (KeyedList.fromList observations) Nothing
+    Group label (KeyedList.fromList observations) Waiting
 
 
 encode : Group -> Encode.Value
-encode (Group label observations current) =
+encode (Group label observations state) =
     Encode.object
         [ "label" => Encode.string label
         , "observations"
@@ -64,17 +69,15 @@ encode (Group label observations current) =
                     |> List.map Observation.encode
                     |> Encode.list
                )
-        , "current" => encodeMaybe Observation.encode current
         ]
 
 
 decoder : Decode.Decoder Group
 decoder =
-    Decode.map3
-        Group
+    Decode.map2
+        init
         (Decode.field "label" Decode.string)
-        (Decode.field "observations" <| keyedListDecoder Observation.decoder)
-        (Decode.field "current" <| Decode.maybe Observation.decoder)
+        (Decode.field "observations" <| Decode.list Observation.decoder)
 
 
 
@@ -91,48 +94,47 @@ type Msg
 
 
 update : Msg -> Group -> Group
-update msg (Group label observations current) =
+update msg (Group label observations state) =
     case msg of
         StartNew kind ->
-            Observation.init kind "" 1
-                |> Just
-                |> Group label observations
+            Group label observations (Entering kind "")
 
-        UpdateCurrent newLabel ->
-            let
-                newCurrent =
-                    Maybe.map (Observation.relabel newLabel) current
-            in
-                Group label observations newCurrent
+        UpdateCurrent newDescription ->
+            case state of
+                Waiting ->
+                    Group label observations Waiting
+
+                Entering kind description ->
+                    Group label observations (Entering kind newDescription)
 
         SaveCurrent ->
-            case current of
-                Nothing ->
-                    Group label observations Nothing
+            case state of
+                Waiting ->
+                    Group label observations Waiting
 
-                Just obs ->
+                Entering kind description ->
                     let
                         newObservations =
-                            KeyedList.cons obs observations
+                            KeyedList.cons (Observation.init kind description 1) observations
                     in
-                        Group label newObservations Nothing
+                        Group label newObservations Waiting
 
         UpdateExisting key submsg ->
             let
                 newObservations =
                     KeyedList.update key (Observation.update submsg) observations
             in
-                Group label newObservations current
+                Group label newObservations state
 
         Delete key ->
             let
                 newObservations =
                     KeyedList.remove key observations
             in
-                Group label newObservations current
+                Group label newObservations state
 
         Relabel newLabel ->
-            Group newLabel observations current
+            Group newLabel observations state
 
 
 
@@ -140,12 +142,11 @@ update msg (Group label observations current) =
 
 
 view : Int -> Config -> Group -> Html Msg
-view id config (Group label observations current) =
+view id config (Group label observations state) =
     div [ class "group" ]
         [ lazy viewLabel label
-
-        -- , lazy2 viewTally config.tally observations
-        , lazy3 viewCurrent id config current
+        , lazy2 viewTally config observations
+        , lazy3 viewInput id config state
         , lazy2 viewObservations config observations
         ]
 
@@ -160,21 +161,27 @@ viewLabel label =
         [ text label ]
 
 
+viewTally : Config.Config -> KeyedList Observation -> Html Msg
+viewTally config observations =
+    let
+        total =
+            KeyedList.toList observations
+                |> List.map (Observation.value config.kinds)
+                |> List.sum
+    in
+        total
+            |> toString
+            |> text
+            |> List.singleton
+            |> h2
+                [ classList
+                    [ ( "points", True )
+                    , ( "hidden", not config.tally )
 
--- viewTally : Bool -> KeyedList Observation -> Html Msg
--- viewTally showTally observations =
---     model.total
---         |> toString
---         |> text
---         |> List.singleton
---         |> h2
---             [ classList
---                 [ ( "points", True )
---                 , ( "total-" ++ (toString <| clamp 0 10 <| abs model.total), True )
---                 , ( "hidden", not model.showTally )
---                 , ( "pos", model.total > 0 )
---                 ]
---             ]
+                    --     , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
+                    --     , ( "pos", total > 0 )
+                    ]
+                ]
 
 
 viewButton : ( String, KindSettings ) -> Html Msg
@@ -187,29 +194,31 @@ viewButton ( label, settings ) =
         [ text label ]
 
 
-viewButtons : Config -> Html Msg
+viewButtons : Config -> List (Html Msg)
 viewButtons config =
     Dict.toList config.kinds
         |> List.map viewButton
-        |> div [ class "buttons" ]
 
 
-viewCurrent : Int -> Config -> Maybe Observation -> Html Msg
-viewCurrent id config obs =
-    div
-        []
-        -- [ classList [ ( "group-input", True ), ( "editing", editing ) ] ]
-        [ viewButtons config
-        , input
-            [ placeholder "Observation"
+viewInput : Int -> Config -> State -> Html Msg
+viewInput id config state =
+    case state of
+        Waiting ->
+            viewButtons config
+                |> div [ class "group-input buttons" ]
 
-            -- , value text
-            , onEnter SaveCurrent
-            , onInput UpdateCurrent
-            , Html.Attributes.id <| "input-group-" ++ (toString id)
-            ]
-            []
-        ]
+        Entering kind description ->
+            div
+                [ class "group-input editing" ]
+                [ input
+                    [ placeholder "Observation"
+                    , value description
+                    , onEnter SaveCurrent
+                    , onInput UpdateCurrent
+                    , Html.Attributes.id <| "input-group-" ++ (toString id)
+                    ]
+                    []
+                ]
 
 
 viewObservations : Config -> KeyedList Observation -> Html Msg
