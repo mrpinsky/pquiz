@@ -2,7 +2,7 @@ module Quiz.Settings exposing (..)
 
 -- import AllDict exposing (AllDict)
 
-import Css
+import Color exposing (Color)
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -12,6 +12,7 @@ import Util exposing ((=>))
 type alias Settings =
     { kinds : KindSettings
     , tally : Bool
+    , groupWidth : Int
     }
 
 
@@ -20,45 +21,83 @@ type alias KindSettings =
 
 
 type alias Kind =
-    { symbol : Char
-    , color : Css.Color
+    { symbol : String
+    , color : Color
     , weight : Int
     }
 
 
 encode : Settings -> Encode.Value
-encode config =
+encode settings =
     Encode.object
-        [ "kinds" => encodeKinds config.kinds
-        , "tally" => Encode.bool config.tally
+        [ "kinds" => encodeKinds settings.kinds
+        , "tally" => Encode.bool settings.tally
+        , "groupWidth" => Encode.int settings.groupWidth
         ]
 
 
 encodeKinds : KindSettings -> Encode.Value
 encodeKinds kinds =
-    Encode.null
+    let
+        encodeHelper ( key, kind ) =
+            ( key, encodeKind kind )
+    in
+        Dict.toList kinds
+            |> List.map encodeHelper
+            |> Encode.object
 
 
 encodeKind : Kind -> Encode.Value
 encodeKind kind =
     Encode.object
-        [ "symbol" => (Encode.string <| toString kind.symbol)
-        , "color" => Encode.null
+        [ "symbol" => Encode.string kind.symbol
+        , "color" => encodeColor kind.color
         , "weight" => Encode.int kind.weight
         ]
 
 
+encodeColor : Color -> Encode.Value
+encodeColor color =
+    let
+        rgba =
+            Color.toRgb color
+    in
+        Encode.object
+            [ "red" => Encode.int rgba.red
+            , "green" => Encode.int rgba.green
+            , "blue" => Encode.int rgba.blue
+            , "alpha" => Encode.float rgba.alpha
+            ]
 
-{--
+
 decoder : Decode.Decoder Settings
 decoder =
-    Decode.map2
+    Decode.map3
         Settings
         (Decode.field "kinds" kindsDecoder)
         (Decode.field "tally" Decode.bool)
+        (Decode.field "groupWidth" Decode.int)
 
 
-kindsDecoder : Decode.Decoder (Dict String KindSettings)
+kindsDecoder : Decode.Decoder KindSettings
 kindsDecoder =
-    Decode.always Dict.empty
---}
+    Decode.dict kindDecoder
+
+
+kindDecoder : Decode.Decoder Kind
+kindDecoder =
+    Decode.map3
+        Kind
+        (Decode.field "symbol" Decode.string)
+        (Decode.field "color" colorDecoder)
+        (Decode.field "weight" Decode.int)
+
+
+colorDecoder : Decode.Decoder Color
+colorDecoder =
+    Decode.map4
+        Color.rgba
+        (Decode.field "red" Decode.int)
+        (Decode.field "green" Decode.int)
+        (Decode.field "blue" Decode.int)
+        (Decode.field "alpha" Decode.float)
