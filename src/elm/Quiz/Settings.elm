@@ -3,16 +3,17 @@ module Quiz.Settings exposing (..)
 -- import AllDict exposing (AllDict)
 
 import Css exposing (Color)
+import Css.Colors
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Util exposing ((=>))
+import Util exposing ((=>), delta)
 
 
 type alias Settings =
     { kinds : KindSettings
     , tally : Bool
-    , groupWidth : Int
+    , groupWidth : Css.Em
     }
 
 
@@ -27,12 +28,48 @@ type alias Kind =
     }
 
 
+default : Settings
+default =
+    { kinds = defaultKinds
+    , tally = False
+    , groupWidth = Css.em 20
+    }
+
+
+defaultKinds : KindSettings
+defaultKinds =
+    let
+        green =
+            { symbol = "+"
+            , color = Css.Colors.green
+            , weight = 1
+            }
+
+        white =
+            { symbol = "*"
+            , color = (Css.hex "ffffff")
+            , weight = 0
+            }
+
+        red =
+            { symbol = delta
+            , color = Css.Colors.red
+            , weight = -1
+            }
+    in
+        Dict.fromList
+            [ "green" => green
+            , "white" => white
+            , "red" => red
+            ]
+
+
 encode : Settings -> Encode.Value
 encode settings =
     Encode.object
         [ "kinds" => encodeKinds settings.kinds
         , "tally" => Encode.bool settings.tally
-        , "groupWidth" => Encode.int settings.groupWidth
+        , "groupWidth" => Encode.float settings.groupWidth.numericValue
         ]
 
 
@@ -72,7 +109,7 @@ decoder =
         Settings
         (Decode.field "kinds" kindsDecoder)
         (Decode.field "tally" Decode.bool)
-        (Decode.field "groupWidth" Decode.int)
+        (Decode.field "groupWidth" <| Decode.map Css.em Decode.float)
 
 
 kindsDecoder : Decode.Decoder KindSettings

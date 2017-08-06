@@ -87,6 +87,13 @@ styles =
     Css.asPairs >> Html.Attributes.style
 
 
+encodeKeyedList : (a -> Encode.Value) -> KeyedList a -> Encode.Value
+encodeKeyedList encoder keyedList =
+    KeyedList.toList keyedList
+        |> List.map encoder
+        |> Encode.list
+
+
 keyedListDecoder : Decode.Decoder a -> Decode.Decoder (KeyedList a)
 keyedListDecoder decoder =
     Decode.list decoder

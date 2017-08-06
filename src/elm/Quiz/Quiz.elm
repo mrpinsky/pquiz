@@ -11,8 +11,8 @@ import Json.Encode as Encode
 import Json.Decode as Decode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Settings as Settings exposing (Settings)
-import Quiz.Group exposing (Group)
-import Util exposing ((=>))
+import Quiz.Group as Group exposing (Group)
+import Util exposing ((=>), keyedListDecoder, encodeKeyedList)
 
 
 -- MODEL
@@ -29,48 +29,35 @@ encode : Quiz -> Encode.Value
 encode quiz =
     Encode.object
         [ "title" => Encode.string quiz.title
-        , "groups" => Encode.list <| KeyedList.toList quiz.groups
+        , "groups" => encodeKeyedList Group.encode quiz.groups
         , "settings" => Settings.encode quiz.settings
         ]
 
 
-decoder : Encode.Value -> Quiz
-decoder json =
+decoder : Decode.Decoder Quiz
+decoder =
     Decode.map3
         Quiz
         (Decode.field "title" Decode.string)
-        (Decode.field "groups" KeyedList.decoder)
+        (Decode.field "groups" <| keyedListDecoder Group.decoder)
         (Decode.field "settings" Settings.decoder)
+
+
+default : Quiz
+default =
+    { title = "Unnamed Quiz"
+    , groups = List.map (\n -> G.init (toString n) n) (List.range 1 8)
+    , settings = Settings.default
+    }
 
 
 
 {--
-decoder : Decode.Decoder Quiz
-decoder =
-    Decode.map5
-        Quiz
-        (Decode.maybe <| Decode.field "id" Decode.int)
-        (Decode.field "title" Decode.string)
-        (Decode.field "groups" <| Decode.list G.decoder)
-        (Decode.field "nextID" Decode.int)
-        (Decode.field "numAcross" Decode.int)
-
-
-baseModel : Quiz
-baseModel =
-    { id = Nothing
-    , title = "Unnamed Quiz"
-    , groups = List.map (\n -> G.init (toString n) n) (List.range 1 8)
-    , nextID = 9
-    , numAcross = 4
-    }
-
-
 init : Maybe Decode.Value -> Quiz
 init json =
     case json of
         Nothing ->
-            baseModel
+            default
 
         Just savedModel ->
             let
@@ -82,7 +69,7 @@ init json =
                         quiz
 
                     Err _ ->
-                        baseModel
+                        default
 
 
 
@@ -134,7 +121,7 @@ update msg quiz =
                 )
 
         Reset ->
-            ( baseModel, Cmd.none, Nothing )
+            ( default, Cmd.none, Nothing )
 
         Create name ->
             let

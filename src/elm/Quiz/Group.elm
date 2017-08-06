@@ -1,4 +1,4 @@
-module Quiz.Group exposing (Group, Msg, init, update, encode, decoder)
+module Quiz.Group exposing (Group, Msg, init, update, view, encode, decoder)
 
 import Css
 import Css.Colors
