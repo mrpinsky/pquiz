@@ -2,14 +2,15 @@ module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relab
 
 -- import AllDict
 
+import Css
 import Dict exposing (Dict)
-import Quiz.Config as Config exposing (..)
+import Quiz.Settings as Settings exposing (..)
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Util exposing ((=>), checkmark, emdash)
+import Util exposing ((=>), checkmark, emdash, styles)
 
 
 -- MODEL
@@ -34,7 +35,7 @@ relabel newLabel (Observation kind label tally) =
     Observation kind newLabel tally
 
 
-value : Dict String KindSettings -> Observation -> Int
+value : KindSettings -> Observation -> Int
 value kinds (Observation kind _ state) =
     case state of
         Struck ->
@@ -48,12 +49,6 @@ value kinds (Observation kind _ state) =
                         |> Maybe.withDefault 1
             in
                 tally * weight
-
-
-
--- kindDecoder : Decoder Kind
--- kindDecoder =
---     Decode.map Kind Decode.string
 
 
 stateDecoder : Decoder State
@@ -137,16 +132,21 @@ update msg (Observation kind label state) =
 -- VIEW
 
 
-view : Config.Config -> Observation -> Html Msg
-view config (Observation kind label state) =
+view : Settings.Settings -> Observation -> Html Msg
+view settings (Observation kind label state) =
     let
-        kindConfig =
-            Dict.get kind config.kinds
+        kindSettings =
+            Dict.get kind settings.kinds
 
         symbol =
-            kindConfig
-                |> Maybe.map (.symbol >> String.fromChar)
+            kindSettings
+                |> Maybe.map .symbol
                 |> Maybe.withDefault checkmark
+
+        bgColor =
+            kindSettings
+                |> Maybe.map .color
+                |> Maybe.withDefault (Css.hex "ffffff")
     in
         case state of
             Struck ->
@@ -154,7 +154,9 @@ view config (Observation kind label state) =
                     [ s [] [ Html.text label ] ]
 
             Active tally ->
-                div []
+                div
+                    [ styles [ Css.backgroundColor bgColor ]
+                    ]
                     [ button [ onClick Increment ]
                         [ Html.text symbol
                         , Html.text <| toString tally

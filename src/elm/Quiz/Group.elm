@@ -13,7 +13,7 @@ import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
 import Util exposing (..)
-import Quiz.Config as Config exposing (..)
+import Quiz.Settings as Settings exposing (..)
 
 
 -- APP TESTING
@@ -24,21 +24,22 @@ main =
     Html.beginnerProgram
         { model = init "Test Group" []
         , update = update
-        , view = view 1 testConfig
+        , view = view 1 testSettings
         }
 
 
-testConfig : Config
-testConfig =
+testSettings : Settings
+testSettings =
     let
         kinds =
             Dict.fromList
-                [ "+" => { symbol = '+', color = Css.Colors.green, weight = 1 }
-                , "-" => { symbol = '-', color = Css.Colors.red, weight = -1 }
+                [ "+" => { symbol = "+", color = Css.Colors.green, weight = 1 }
+                , "-" => { symbol = "-", color = Css.Colors.red, weight = -1 }
                 ]
     in
         { kinds = kinds
         , tally = True
+        , groupWidth = 20
         }
 
 
@@ -141,13 +142,13 @@ update msg (Group label observations state) =
 -- VIEW
 
 
-view : Int -> Config -> Group -> Html Msg
-view id config (Group label observations state) =
+view : Int -> Settings -> Group -> Html Msg
+view id settings (Group label observations state) =
     div [ class "group" ]
         [ lazy viewLabel label
-        , lazy2 viewTally config observations
-        , lazy3 viewInput id config state
-        , lazy2 viewObservations config observations
+        , lazy2 viewTally settings observations
+        , lazy3 viewInput id settings state
+        , lazy2 viewObservations settings observations
         ]
 
 
@@ -161,12 +162,12 @@ viewLabel label =
         [ text label ]
 
 
-viewTally : Config.Config -> KeyedList Observation -> Html Msg
-viewTally config observations =
+viewTally : Settings.Settings -> KeyedList Observation -> Html Msg
+viewTally settings observations =
     let
         total =
             KeyedList.toList observations
-                |> List.map (Observation.value config.kinds)
+                |> List.map (Observation.value settings.kinds)
                 |> List.sum
     in
         total
@@ -176,7 +177,7 @@ viewTally config observations =
             |> h2
                 [ classList
                     [ ( "points", True )
-                    , ( "hidden", not config.tally )
+                    , ( "hidden", not settings.tally )
 
                     --     , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
                     --     , ( "pos", total > 0 )
@@ -184,27 +185,27 @@ viewTally config observations =
                 ]
 
 
-viewButton : ( String, KindSettings ) -> Html Msg
-viewButton ( label, settings ) =
+viewButtons : Settings -> List (Html Msg)
+viewButtons settings =
+    Dict.toList settings.kinds
+        |> List.map viewButton
+
+
+viewButton : ( String, Kind ) -> Html Msg
+viewButton ( label, kind ) =
     button
         [ onClick <| StartNew label
         , class "input-button"
-        , styles [ Css.backgroundColor settings.color ]
+        , styles [ Css.backgroundColor kind.color ]
         ]
         [ text label ]
 
 
-viewButtons : Config -> List (Html Msg)
-viewButtons config =
-    Dict.toList config.kinds
-        |> List.map viewButton
-
-
-viewInput : Int -> Config -> State -> Html Msg
-viewInput id config state =
+viewInput : Int -> Settings -> State -> Html Msg
+viewInput id settings state =
     case state of
         Waiting ->
-            viewButtons config
+            viewButtons settings
                 |> div [ class "group-input buttons" ]
 
         Entering kind description ->
@@ -221,17 +222,17 @@ viewInput id config state =
                 ]
 
 
-viewObservations : Config -> KeyedList Observation -> Html Msg
-viewObservations config observations =
-    KeyedList.keyedMap (viewKeyedObservation config) observations
+viewObservations : Settings -> KeyedList Observation -> Html Msg
+viewObservations settings observations =
+    KeyedList.keyedMap (viewKeyedObservation settings) observations
         |> ul []
 
 
-viewKeyedObservation : Config -> Key -> Observation -> Html Msg
-viewKeyedObservation config key observation =
+viewKeyedObservation : Settings -> Key -> Observation -> Html Msg
+viewKeyedObservation settings key observation =
     let
         inner =
-            Observation.view config observation
+            Observation.view settings observation
                 |> Html.map (UpdateExisting key)
     in
         li []
