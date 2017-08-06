@@ -1,5 +1,6 @@
-module Quiz exposing (Model, Msg(Rename), init, update, view, toJSON)
+module Quiz exposing (Quiz, encode)
 
+-- (Model, Msg(Rename), init, update, view, encode)
 -- Elm Packages
 
 import Html exposing (..)
@@ -8,55 +9,55 @@ import Html.Events exposing (..)
 import Html.Lazy exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
+import KeyedList exposing (KeyedList, Key)
 
 
 -- Local Files
 
-import Group as G
-import Util
+import Quiz.Config as Config
+import Quiz.Group exposing (Group)
+import Util exposing ((=>))
 
 
 -- MODEL
 
 
-type alias Model =
-    { id : Maybe Int
-    , title : String
-    , groups : List G.Model
-    , nextID : Int
-    , numAcross : Int
+type alias Quiz =
+    { title : String
+    , groups : KeyedList Group
+    , settings : Config.Config
     }
 
 
-toJSON : Model -> Encode.Value
-toJSON model =
+encode : Quiz -> Encode.Value
+encode quiz =
     Encode.object
-        [ ( "id", Util.encodeMaybe Encode.int model.id )
-        , ( "title", Encode.string model.title )
-        , ( "groups", Encode.list <| List.map G.toJSON model.groups )
-        , ( "nextID", Encode.int model.nextID )
-        , ( "numAcross", Encode.int model.numAcross )
+        [ "title" => Encode.string quiz.title
+        , "groups" => Encode.list <| KeyedList.toList quiz.groups
+        , "settings" => Encode.int quiz.settings
         ]
 
 
-fromJSON : Encode.Value -> Model
-fromJSON json =
+
+{--
+decoder : Encode.Value -> Quiz
+decoder json =
     let
         result =
             Decode.decodeValue decoder json
     in
         case result of
-            Ok model ->
-                model
+            Ok quiz ->
+                quiz
 
             Err _ ->
                 baseModel
 
 
-decoder : Decode.Decoder Model
+decoder : Decode.Decoder Quiz
 decoder =
     Decode.map5
-        Model
+        Quiz
         (Decode.maybe <| Decode.field "id" Decode.int)
         (Decode.field "title" Decode.string)
         (Decode.field "groups" <| Decode.list G.decoder)
@@ -64,7 +65,7 @@ decoder =
         (Decode.field "numAcross" Decode.int)
 
 
-baseModel : Model
+baseModel : Quiz
 baseModel =
     { id = Nothing
     , title = "Unnamed Quiz"
@@ -74,7 +75,7 @@ baseModel =
     }
 
 
-init : Maybe Decode.Value -> Model
+init : Maybe Decode.Value -> Quiz
 init json =
     case json of
         Nothing ->
@@ -86,8 +87,8 @@ init json =
                     Decode.decodeValue decoder savedModel
             in
                 case result of
-                    Ok model ->
-                        model
+                    Ok quiz ->
+                        quiz
 
                     Err _ ->
                         baseModel
@@ -111,8 +112,8 @@ type Msg
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Maybe String )
-update msg model =
+update : Msg -> Quiz -> ( Quiz, Cmd Msg, Maybe String )
+update msg quiz =
     case msg of
         Rename maybeTitle ->
             let
@@ -122,12 +123,12 @@ update msg model =
                     else
                         maybeTitle
             in
-                ( { model | title = title }, Cmd.none, Nothing )
+                ( { quiz | title = title }, Cmd.none, Nothing )
 
         UpdateGroup id groupMsg ->
             let
                 updates =
-                    List.map (updateHelp id groupMsg) model.groups
+                    List.map (updateHelp id groupMsg) quiz.groups
 
                 toDelete =
                     List.filterMap Tuple.second updates
@@ -136,7 +137,7 @@ update msg model =
                     List.map Tuple.first updates
                         |> List.filter (\grp -> not <| List.member grp.id toDelete)
             in
-                ( { model | groups = newGroups }
+                ( { quiz | groups = newGroups }
                 , Cmd.none
                 , Just <| "input-group-" ++ toString id
                 )
@@ -147,22 +148,22 @@ update msg model =
         Create name ->
             let
                 newGroup =
-                    G.init name model.nextID
+                    G.init name quiz.nextID
 
                 newGroups =
-                    model.groups ++ [ newGroup ]
+                    quiz.groups ++ [ newGroup ]
             in
-                ( { model
+                ( { quiz
                     | groups = newGroups
-                    , nextID = model.nextID + 1
+                    , nextID = quiz.nextID + 1
                   }
                 , Cmd.none
                 , Nothing
                 )
 
         Remove id ->
-            ( { model
-                | groups = List.filter (\group -> group.id /= id) model.groups
+            ( { quiz
+                | groups = List.filter (\group -> group.id /= id) quiz.groups
               }
             , Cmd.none
             , Nothing
@@ -173,12 +174,12 @@ update msg model =
                 newGroups =
                     List.map
                         (Tuple.first << G.update (G.SetScoreDisplay visible))
-                        model.groups
+                        quiz.groups
             in
-                ( { model | groups = newGroups }, Cmd.none, Nothing )
+                ( { quiz | groups = newGroups }, Cmd.none, Nothing )
 
         SetNumAcross n ->
-            ( { model | numAcross = n }, Cmd.none, Nothing )
+            ( { quiz | numAcross = n }, Cmd.none, Nothing )
 
 
 updateHelp : Int -> G.Msg -> G.Model -> ( G.Model, Maybe Int )
@@ -198,18 +199,18 @@ updateHelp id msg group =
     (,)
 
 
-view : Model -> Html Msg
-view model =
+view : Quiz -> Html Msg
+view quiz =
     div []
-        [ lazy viewMenu model
-        , div [] (List.map (viewIndexedGroup model.numAcross) model.groups)
+        [ lazy viewMenu quiz
+        , div [] (List.map (viewIndexedGroup quiz.numAcross) quiz.groups)
         ]
 
 
-viewMenu : Model -> Html Msg
-viewMenu model =
+viewMenu : Quiz -> Html Msg
+viewMenu quiz =
     div []
-        [ menuButton (Create (toString model.nextID)) "Add Group"
+        [ menuButton (Create (toString quiz.nextID)) "Add Group"
         , menuButton Reset "Reset All Groups"
         , menuButton (SetTallyDisplays True) "Show Point Tallies"
         , menuButton (SetTallyDisplays False) "Hide Point Tallies"
@@ -241,3 +242,4 @@ numAcrossButton numAcross =
 viewIndexedGroup : Int -> G.Model -> Html Msg
 viewIndexedGroup numAcross group =
     Html.map (UpdateGroup group.id) (G.viewWithRemoveButton numAcross group)
+--}
