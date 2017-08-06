@@ -10,11 +10,7 @@ import Html.Lazy exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import KeyedList exposing (KeyedList, Key)
-
-
--- Local Files
-
-import Quiz.Config as Config
+import Quiz.Settings as Settings exposing (Settings)
 import Quiz.Group exposing (Group)
 import Util exposing ((=>))
 
@@ -25,7 +21,7 @@ import Util exposing ((=>))
 type alias Quiz =
     { title : String
     , groups : KeyedList Group
-    , settings : Config.Config
+    , settings : Settings
     }
 
 
@@ -34,26 +30,21 @@ encode quiz =
     Encode.object
         [ "title" => Encode.string quiz.title
         , "groups" => Encode.list <| KeyedList.toList quiz.groups
-        , "settings" => Encode.int quiz.settings
+        , "settings" => Settings.encode quiz.settings
         ]
+
+
+decoder : Encode.Value -> Quiz
+decoder json =
+    Decode.map3
+        Quiz
+        (Decode.field "title" Decode.string)
+        (Decode.field "groups" KeyedList.decoder)
+        (Decode.field "settings" Settings.decoder)
 
 
 
 {--
-decoder : Encode.Value -> Quiz
-decoder json =
-    let
-        result =
-            Decode.decodeValue decoder json
-    in
-        case result of
-            Ok quiz ->
-                quiz
-
-            Err _ ->
-                baseModel
-
-
 decoder : Decode.Decoder Quiz
 decoder =
     Decode.map5
