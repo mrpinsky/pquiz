@@ -2,7 +2,7 @@ module Quiz.Settings exposing (..)
 
 -- import AllDict exposing (AllDict)
 
-import Color exposing (Color)
+import Css exposing (Color)
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -58,16 +58,12 @@ encodeKind kind =
 
 encodeColor : Color -> Encode.Value
 encodeColor color =
-    let
-        rgba =
-            Color.toRgb color
-    in
-        Encode.object
-            [ "red" => Encode.int rgba.red
-            , "green" => Encode.int rgba.green
-            , "blue" => Encode.int rgba.blue
-            , "alpha" => Encode.float rgba.alpha
-            ]
+    Encode.object
+        [ "red" => Encode.int color.red
+        , "green" => Encode.int color.green
+        , "blue" => Encode.int color.blue
+        , "alpha" => Encode.float color.alpha
+        ]
 
 
 decoder : Decode.Decoder Settings
@@ -96,7 +92,7 @@ kindDecoder =
 colorDecoder : Decode.Decoder Color
 colorDecoder =
     Decode.map4
-        Color.rgba
+        Css.rgba
         (Decode.field "red" Decode.int)
         (Decode.field "green" Decode.int)
         (Decode.field "blue" Decode.int)
