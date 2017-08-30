@@ -13,7 +13,7 @@ import Util exposing ((=>), delta)
 type alias Settings =
     { kinds : KindSettings
     , tally : Bool
-    , groupWidth : Css.Em
+    , groupWidth : Css.Px
     }
 
 
@@ -32,7 +32,7 @@ default : Settings
 default =
     { kinds = defaultKinds
     , tally = False
-    , groupWidth = Css.em 20
+    , groupWidth = Css.px 100
     }
 
 
@@ -62,6 +62,10 @@ defaultKinds =
             , "white" => white
             , "red" => red
             ]
+
+
+
+-- JSON
 
 
 encode : Settings -> Encode.Value
@@ -109,7 +113,7 @@ decoder =
         Settings
         (Decode.field "kinds" kindsDecoder)
         (Decode.field "tally" Decode.bool)
-        (Decode.field "groupWidth" <| Decode.map Css.em Decode.float)
+        (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
 
 
 kindsDecoder : Decode.Decoder KindSettings
@@ -134,3 +138,44 @@ colorDecoder =
         (Decode.field "green" Decode.int)
         (Decode.field "blue" Decode.int)
         (Decode.field "alpha" Decode.float)
+
+
+
+{-
+   type alias Settings =
+       { kinds : KindSettings
+       , tally : Bool
+       , groupWidth : Css.Em
+       }
+-}
+-- UPDATE
+
+
+setGroupWidth : Css.Px -> Settings -> Settings
+setGroupWidth pixels settings =
+    { settings | groupWidth = pixels }
+
+
+toggleTally : Settings -> Settings
+toggleTally settings =
+    { settings | tally = not settings.tally }
+
+
+insertKind : String -> Kind -> Settings -> Settings
+insertKind name kind settings =
+    let
+        newKinds =
+            Dict.insert name kind settings.kinds
+    in
+        { settings | kinds = newKinds }
+
+
+updateKind : String -> (Maybe Kind -> Maybe Kind) -> Settings -> Settings
+updateKind name updater settings =
+    -- TODO: Implement this
+    settings
+
+
+removeKind : String -> Settings -> Settings
+removeKind name settings =
+    { settings | kinds = Dict.remove name settings.kinds }

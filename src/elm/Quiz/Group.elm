@@ -16,34 +16,6 @@ import Util exposing (..)
 import Quiz.Settings as Settings exposing (..)
 
 
--- APP TESTING
-
-
-main : Program Never Group Msg
-main =
-    Html.beginnerProgram
-        { model = init "Test Group" []
-        , update = update
-        , view = view 1 testSettings
-        }
-
-
-testSettings : Settings
-testSettings =
-    let
-        kinds =
-            Dict.fromList
-                [ "+" => { symbol = "+", color = Css.Colors.green, weight = 1 }
-                , "-" => { symbol = "-", color = Css.Colors.red, weight = -1 }
-                ]
-    in
-        { kinds = kinds
-        , tally = True
-        , groupWidth = 20
-        }
-
-
-
 -- MODEL
 
 
@@ -142,12 +114,12 @@ update msg (Group label observations state) =
 -- VIEW
 
 
-view : Int -> Settings -> Group -> Html Msg
-view id settings (Group label observations state) =
+view : Settings -> Key -> Group -> Html Msg
+view settings key (Group label observations state) =
     div [ class "group" ]
         [ lazy viewLabel label
         , lazy2 viewTally settings observations
-        , lazy3 viewInput id settings state
+        , lazy3 viewInput settings key state
         , lazy2 viewObservations settings observations
         ]
 

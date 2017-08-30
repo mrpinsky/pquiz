@@ -1,4 +1,4 @@
-module Quiz exposing (Quiz, encode)
+module Quiz exposing (..)
 
 -- (Model, Msg(Rename), init, update, view, encode)
 -- Elm Packages
@@ -18,19 +18,16 @@ import Util exposing ((=>), keyedListDecoder, encodeKeyedList)
 -- MODEL
 
 
-type alias Quiz =
-    { title : String
-    , groups : KeyedList Group
-    , settings : Settings
-    }
+type Quiz
+    = Quiz String Settings (KeyedList Group)
 
 
 encode : Quiz -> Encode.Value
-encode quiz =
+encode (Quiz title settings groups) =
     Encode.object
-        [ "title" => Encode.string quiz.title
-        , "groups" => encodeKeyedList Group.encode quiz.groups
-        , "settings" => Settings.encode quiz.settings
+        [ "title" => Encode.string title
+        , "groups" => encodeKeyedList Group.encode groups
+        , "settings" => Settings.encode settings
         ]
 
 
@@ -39,37 +36,36 @@ decoder =
     Decode.map3
         Quiz
         (Decode.field "title" Decode.string)
-        (Decode.field "groups" <| keyedListDecoder Group.decoder)
         (Decode.field "settings" Settings.decoder)
+        (Decode.field "groups" <| keyedListDecoder Group.decoder)
 
 
 default : Quiz
 default =
-    { title = "Unnamed Quiz"
-    , groups = List.map (\n -> G.init (toString n) n) (List.range 1 8)
-    , settings = Settings.default
-    }
+    let
+        groups =
+            blankGroups 8
+    in
+        Quiz "Unnamed Quiz" Settings.default groups
 
 
+blankGroups : Int -> KeyedList Group
+blankGroups count =
+    List.range 1 count
+        |> List.map numberedGroup
+        |> KeyedList.fromList
 
-{--
+
+numberedGroup : Int -> Group
+numberedGroup n =
+    Group.init ("Group " ++ toString n) []
+
+
 init : Maybe Decode.Value -> Quiz
 init json =
-    case json of
-        Nothing ->
-            default
-
-        Just savedModel ->
-            let
-                result =
-                    Decode.decodeValue decoder savedModel
-            in
-                case result of
-                    Ok quiz ->
-                        quiz
-
-                    Err _ ->
-                        default
+    json
+        |> Maybe.andThen (Decode.decodeValue decoder >> Result.toMaybe)
+        |> Maybe.withDefault default
 
 
 
@@ -78,103 +74,58 @@ init json =
 
 type Msg
     = Rename String
-    | UpdateGroup Int G.Msg
-    | Reset
-    | Create String
-    | Remove Int
-    | SetTallyDisplays Bool
-    | SetNumAcross Int
+    | AddGroup String
+    | UpdateGroup Key Group.Msg
+    | RemoveGroup Key
+    | ResetGroups
+    | UpdateSettings Settings
 
 
 
 -- UPDATE
 
 
-update : Msg -> Quiz -> ( Quiz, Cmd Msg, Maybe String )
-update msg quiz =
+update : Msg -> Quiz -> Quiz
+update msg (Quiz title settings groups) =
     case msg of
-        Rename maybeTitle ->
-            let
-                title =
-                    if maybeTitle == "" then
-                        "Untitled Quiz"
-                    else
-                        maybeTitle
-            in
-                ( { quiz | title = title }, Cmd.none, Nothing )
+        Rename newTitle ->
+            Quiz newTitle settings groups
 
-        UpdateGroup id groupMsg ->
-            let
-                updates =
-                    List.map (updateHelp id groupMsg) quiz.groups
-
-                toDelete =
-                    List.filterMap Tuple.second updates
-
-                newGroups =
-                    List.map Tuple.first updates
-                        |> List.filter (\grp -> not <| List.member grp.id toDelete)
-            in
-                ( { quiz | groups = newGroups }
-                , Cmd.none
-                , Just <| "input-group-" ++ toString id
-                )
-
-        Reset ->
-            ( default, Cmd.none, Nothing )
-
-        Create name ->
-            let
-                newGroup =
-                    G.init name quiz.nextID
-
-                newGroups =
-                    quiz.groups ++ [ newGroup ]
-            in
-                ( { quiz
-                    | groups = newGroups
-                    , nextID = quiz.nextID + 1
-                  }
-                , Cmd.none
-                , Nothing
-                )
-
-        Remove id ->
-            ( { quiz
-                | groups = List.filter (\group -> group.id /= id) quiz.groups
-              }
-            , Cmd.none
-            , Nothing
-            )
-
-        SetTallyDisplays visible ->
+        AddGroup groupName ->
             let
                 newGroups =
-                    List.map
-                        (Tuple.first << G.update (G.SetScoreDisplay visible))
-                        quiz.groups
+                    KeyedList.push (Group.init groupName []) groups
             in
-                ( { quiz | groups = newGroups }, Cmd.none, Nothing )
+                Quiz title settings newGroups
 
-        SetNumAcross n ->
-            ( { quiz | numAcross = n }, Cmd.none, Nothing )
+        UpdateGroup key submsg ->
+            let
+                newGroups =
+                    KeyedList.update key (Group.update submsg) groups
+            in
+                Quiz title settings newGroups
 
+        RemoveGroup key ->
+            let
+                newGroups =
+                    KeyedList.remove key groups
+            in
+                Quiz title settings newGroups
 
-updateHelp : Int -> G.Msg -> G.Model -> ( G.Model, Maybe Int )
-updateHelp id msg group =
-    if group.id /= id then
-        ( group, Nothing )
-    else
-        G.update msg group
+        ResetGroups ->
+            let
+                newGroups =
+                    KeyedList.length groups
+                        |> blankGroups
+            in
+                Quiz title settings newGroups
+
+        UpdateSettings newSettings ->
+            Quiz title newSettings groups
 
 
 
 -- VIEW
-
-
-(=>) : a -> b -> ( a, b )
-(=>) =
-    (,)
 
 
 view : Quiz -> Html Msg
@@ -188,11 +139,13 @@ view quiz =
 viewMenu : Quiz -> Html Msg
 viewMenu quiz =
     div []
-        [ menuButton (Create (toString quiz.nextID)) "Add Group"
+        [ menuButton (AddGroup (toString quiz.nextID)) "Add Group"
         , menuButton Reset "Reset All Groups"
-        , menuButton (SetTallyDisplays True) "Show Point Tallies"
-        , menuButton (SetTallyDisplays False) "Hide Point Tallies"
-        , List.map numAcrossButton [ 3, 4, 5 ]
+
+        -- , menuButton (SetTallyDisplays True) "Show Point Tallies"
+        -- , menuButton (SetTallyDisplays False) "Hide Point Tallies"
+        , List.range 2 5
+            |> List.map numAcrossButton
             |> List.append [ text "Groups per Row: " ]
             |> span []
         ]
@@ -217,7 +170,15 @@ numAcrossButton numAcross =
     styledButton "" (SetNumAcross numAcross) <| toString numAcross
 
 
-viewIndexedGroup : Int -> G.Model -> Html Msg
-viewIndexedGroup numAcross group =
-    Html.map (UpdateGroup group.id) (G.viewWithRemoveButton numAcross group)
---}
+viewKeyedGroup : Settings -> Key -> Group -> Html Msg
+viewKeyedGroup settings key group =
+    let
+        inner =
+            Group.view settings group
+                |> Html.map (UpdateGroup key)
+    in
+        div []
+            [ inner
+            , button [ onClick (RemoveGroup key) ]
+                [ text "x" ]
+            ]
