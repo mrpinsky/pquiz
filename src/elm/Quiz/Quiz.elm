@@ -1,8 +1,9 @@
-module Quiz exposing (..)
+module Quiz.Quiz exposing (..)
 
 -- (Model, Msg(Rename), init, update, view, encode)
 -- Elm Packages
 
+import Css
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (..)
@@ -12,31 +13,30 @@ import Json.Decode as Decode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Settings as Settings exposing (Settings)
 import Quiz.Group as Group exposing (Group)
-import Util exposing ((=>), keyedListDecoder, encodeKeyedList)
+import Util exposing ((=>), keyedListDecoder, encodeKeyedList, styles)
 
 
 -- MODEL
 
 
 type Quiz
-    = Quiz String Settings (KeyedList Group)
+    = Quiz String (KeyedList Group)
 
 
 encode : Quiz -> Encode.Value
-encode (Quiz title settings groups) =
+encode (Quiz title groups) =
     Encode.object
         [ "title" => Encode.string title
         , "groups" => encodeKeyedList Group.encode groups
-        , "settings" => Settings.encode settings
         ]
 
 
 decoder : Decode.Decoder Quiz
 decoder =
-    Decode.map3
+    Decode.map2
         Quiz
         (Decode.field "title" Decode.string)
-        (Decode.field "settings" Settings.decoder)
+        -- (Decode.field "settings" Settings.decoder)
         (Decode.field "groups" <| keyedListDecoder Group.decoder)
 
 
@@ -46,7 +46,7 @@ default =
         groups =
             blankGroups 8
     in
-        Quiz "Unnamed Quiz" Settings.default groups
+        Quiz "Unnamed Quiz" groups
 
 
 blankGroups : Int -> KeyedList Group
@@ -78,7 +78,6 @@ type Msg
     | UpdateGroup Key Group.Msg
     | RemoveGroup Key
     | ResetGroups
-    | UpdateSettings Settings
 
 
 
@@ -86,31 +85,31 @@ type Msg
 
 
 update : Msg -> Quiz -> Quiz
-update msg (Quiz title settings groups) =
+update msg (Quiz title groups) =
     case msg of
         Rename newTitle ->
-            Quiz newTitle settings groups
+            Quiz newTitle groups
 
         AddGroup groupName ->
             let
                 newGroups =
                     KeyedList.push (Group.init groupName []) groups
             in
-                Quiz title settings newGroups
+                Quiz title newGroups
 
         UpdateGroup key submsg ->
             let
                 newGroups =
                     KeyedList.update key (Group.update submsg) groups
             in
-                Quiz title settings newGroups
+                Quiz title newGroups
 
         RemoveGroup key ->
             let
                 newGroups =
                     KeyedList.remove key groups
             in
-                Quiz title settings newGroups
+                Quiz title newGroups
 
         ResetGroups ->
             let
@@ -118,44 +117,48 @@ update msg (Quiz title settings groups) =
                     KeyedList.length groups
                         |> blankGroups
             in
-                Quiz title settings newGroups
-
-        UpdateSettings newSettings ->
-            Quiz title newSettings groups
+                Quiz title newGroups
 
 
 
 -- VIEW
 
 
-view : Quiz -> Html Msg
-view quiz =
+view : Settings -> Quiz -> Html Msg
+view settings (Quiz title groups) =
     div []
-        [ lazy viewMenu quiz
-        , div [] (List.map (viewIndexedGroup quiz.numAcross) quiz.groups)
+        [ lazy viewTitle title
+        , lazy viewMenu settings
+        , div [ styles [ Css.displayFlex ] ] <|
+            KeyedList.keyedMap (lazy3 viewKeyedGroup settings) groups
         ]
 
 
-viewMenu : Quiz -> Html Msg
-viewMenu quiz =
+viewTitle : String -> Html Msg
+viewTitle title =
+    h1 [] [ text title ]
+
+
+viewMenu : Settings -> Html Msg
+viewMenu settings =
     div []
-        [ menuButton (AddGroup (toString quiz.nextID)) "Add Group"
-        , menuButton Reset "Reset All Groups"
+        [ menuButton (AddGroup "New Group") "Add Group"
+        , menuButton ResetGroups "Reset All Groups"
 
         -- , menuButton (SetTallyDisplays True) "Show Point Tallies"
         -- , menuButton (SetTallyDisplays False) "Hide Point Tallies"
-        , List.range 2 5
-            |> List.map numAcrossButton
-            |> List.append [ text "Groups per Row: " ]
-            |> span []
+        -- , List.range 2 5
+        --     |> List.map numAcrossButton
+        --     |> List.append [ text "Groups per Row: " ]
+        --     |> span []
         ]
 
 
 styledButton : String -> Msg -> String -> Html Msg
-styledButton styles msg label =
+styledButton className msg label =
     button
         [ onClick msg
-        , class styles
+        , class className
         ]
         [ text label ]
 
@@ -163,11 +166,6 @@ styledButton styles msg label =
 menuButton : Msg -> String -> Html Msg
 menuButton msg label =
     styledButton "menu-button" msg label
-
-
-numAcrossButton : Int -> Html Msg
-numAcrossButton numAcross =
-    styledButton "" (SetNumAcross numAcross) <| toString numAcross
 
 
 viewKeyedGroup : Settings -> Key -> Group -> Html Msg

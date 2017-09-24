@@ -74,12 +74,12 @@ onEnter msg =
 
 
 onContentEdit : (String -> msg) -> Attribute msg
-onContentEdit msg =
+onContentEdit tagger =
     let
         innerHtmlDecoder =
             Decode.at [ "target", "innerHTML" ] Decode.string
     in
-        on "blur" (Decode.map msg innerHtmlDecoder)
+        on "blur" (Decode.map tagger innerHtmlDecoder)
 
 
 styles : List Css.Style -> Html.Attribute msg

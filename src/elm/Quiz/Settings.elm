@@ -7,24 +7,25 @@ import Css.Colors
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Quiz.Kind as Kind
+    exposing
+        ( Kind
+        , update
+        , view
+        , defaultKinds
+        , otherDefaultKinds
+        , encodeKind
+        , kindDecoder
+        )
 import Util exposing ((=>), delta)
+import Html exposing (..)
+import Html.Events exposing (..)
 
 
 type alias Settings =
-    { kinds : KindSettings
+    { kinds : Kind.KindSettings
     , tally : Bool
     , groupWidth : Css.Px
-    }
-
-
-type alias KindSettings =
-    Dict String Kind
-
-
-type alias Kind =
-    { symbol : String
-    , color : Color
-    , weight : Int
     }
 
 
@@ -36,33 +37,50 @@ default =
     }
 
 
-defaultKinds : KindSettings
-defaultKinds =
-    let
-        green =
-            { symbol = "+"
-            , color = Css.Colors.green
-            , weight = 1
+type Msg
+    = Change
+    | KindMsg String Kind.Msg
+
+
+update : Msg -> Settings -> Settings
+update msg settings =
+    case msg of
+        Change ->
+            { kinds = otherDefaultKinds
+            , tally = True
+            , groupWidth =
+                Css.px 200
             }
 
-        white =
-            { symbol = "*"
-            , color = (Css.hex "ffffff")
-            , weight = 0
-            }
+        KindMsg label kindMsg ->
+            let
+                updateHelper =
+                     Kind.update kindMsg
+                        |> Maybe.map
 
-        red =
-            { symbol = delta
-            , color = Css.Colors.red
-            , weight = -1
-            }
-    in
-        Dict.fromList
-            [ "green" => green
-            , "white" => white
-            , "red" => red
-            ]
+                newKinds =
+                     Dict.update label updateHelper settings.kinds 
+            in
+                { settings | kinds = newKinds }
 
+
+view : Settings -> Html Msg
+view settings =
+    button [ onClick Change ] [ text "Change!" ]
+        :: viewKinds settings.kinds
+        |> div []
+
+
+viewKinds : Kind.KindSettings -> List (Html Msg)
+viewKinds kindSettings =
+    Dict.toList kindSettings
+        |> List.map viewKindHelper  
+
+
+viewKindHelper : (String, Kind) -> Html Msg
+viewKindHelper (label, kind) =
+    Kind.view kind
+        |> Html.map (KindMsg label)
 
 
 -- JSON
@@ -77,7 +95,7 @@ encode settings =
         ]
 
 
-encodeKinds : KindSettings -> Encode.Value
+encodeKinds : Kind.KindSettings -> Encode.Value
 encodeKinds kinds =
     let
         encodeHelper ( key, kind ) =
@@ -86,25 +104,6 @@ encodeKinds kinds =
         Dict.toList kinds
             |> List.map encodeHelper
             |> Encode.object
-
-
-encodeKind : Kind -> Encode.Value
-encodeKind kind =
-    Encode.object
-        [ "symbol" => Encode.string kind.symbol
-        , "color" => encodeColor kind.color
-        , "weight" => Encode.int kind.weight
-        ]
-
-
-encodeColor : Color -> Encode.Value
-encodeColor color =
-    Encode.object
-        [ "red" => Encode.int color.red
-        , "green" => Encode.int color.green
-        , "blue" => Encode.int color.blue
-        , "alpha" => Encode.float color.alpha
-        ]
 
 
 decoder : Decode.Decoder Settings
@@ -116,38 +115,12 @@ decoder =
         (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
 
 
-kindsDecoder : Decode.Decoder KindSettings
+kindsDecoder : Decode.Decoder Kind.KindSettings
 kindsDecoder =
     Decode.dict kindDecoder
 
 
-kindDecoder : Decode.Decoder Kind
-kindDecoder =
-    Decode.map3
-        Kind
-        (Decode.field "symbol" Decode.string)
-        (Decode.field "color" colorDecoder)
-        (Decode.field "weight" Decode.int)
 
-
-colorDecoder : Decode.Decoder Color
-colorDecoder =
-    Decode.map4
-        Css.rgba
-        (Decode.field "red" Decode.int)
-        (Decode.field "green" Decode.int)
-        (Decode.field "blue" Decode.int)
-        (Decode.field "alpha" Decode.float)
-
-
-
-{-
-   type alias Settings =
-       { kinds : KindSettings
-       , tally : Bool
-       , groupWidth : Css.Em
-       }
--}
 -- UPDATE
 
 
@@ -168,12 +141,6 @@ insertKind name kind settings =
             Dict.insert name kind settings.kinds
     in
         { settings | kinds = newKinds }
-
-
-updateKind : String -> (Maybe Kind -> Maybe Kind) -> Settings -> Settings
-updateKind name updater settings =
-    -- TODO: Implement this
-    settings
 
 
 removeKind : String -> Settings -> Settings

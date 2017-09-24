@@ -14,6 +14,17 @@ import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
 import Util exposing (..)
 import Quiz.Settings as Settings exposing (..)
+import Quiz.Kind exposing (Kind)
+
+
+main : Program Never Group Msg
+main =
+    Html.beginnerProgram
+        { model = init "Test Group" []
+        , view = view Settings.default
+        , update = update
+        }
+
 
 
 -- MODEL
@@ -114,12 +125,15 @@ update msg (Group label observations state) =
 -- VIEW
 
 
-view : Settings -> Key -> Group -> Html Msg
-view settings key (Group label observations state) =
-    div [ class "group" ]
+view : Settings -> Group -> Html Msg
+view settings (Group label observations state) =
+    div
+        [ class "group"
+        , styles [ Css.width settings.groupWidth ]
+        ]
         [ lazy viewLabel label
         , lazy2 viewTally settings observations
-        , lazy3 viewInput settings key state
+        , lazy2 viewInput settings state
         , lazy2 viewObservations settings observations
         ]
 
@@ -170,11 +184,11 @@ viewButton ( label, kind ) =
         , class "input-button"
         , styles [ Css.backgroundColor kind.color ]
         ]
-        [ text label ]
+        [ text kind.symbol ]
 
 
-viewInput : Int -> Settings -> State -> Html Msg
-viewInput id settings state =
+viewInput : Settings -> State -> Html Msg
+viewInput settings state =
     case state of
         Waiting ->
             viewButtons settings
@@ -188,7 +202,8 @@ viewInput id settings state =
                     , value description
                     , onEnter SaveCurrent
                     , onInput UpdateCurrent
-                    , Html.Attributes.id <| "input-group-" ++ (toString id)
+
+                    -- , Html.Attributes.id <| "input-group-" ++ (toString id)
                     ]
                     []
                 ]

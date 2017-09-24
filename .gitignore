@@ -5,3 +5,4 @@ node_modules/
 !*.sql
 src/elm/src/
 **/elm.js
+tags

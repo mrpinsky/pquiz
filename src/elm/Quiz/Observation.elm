@@ -10,6 +10,7 @@ import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Quiz.Kind as Kind exposing (KindSettings)
 import Util exposing ((=>), checkmark, emdash, styles)
 
 
