@@ -13,7 +13,6 @@ import Quiz.Kind as Kind
         , update
         , view
         , defaultKinds
-        , otherDefaultKinds
         , encodeKind
         , kindDecoder
         )
@@ -38,20 +37,12 @@ default =
 
 
 type Msg
-    = Change
-    | KindMsg String Kind.Msg
+    = KindMsg String Kind.Msg
 
 
 update : Msg -> Settings -> Settings
 update msg settings =
     case msg of
-        Change ->
-            { kinds = otherDefaultKinds
-            , tally = True
-            , groupWidth =
-                Css.px 200
-            }
-
         KindMsg label kindMsg ->
             let
                 updateHelper =
@@ -66,8 +57,7 @@ update msg settings =
 
 view : Settings -> Html Msg
 view settings =
-    button [ onClick Change ] [ text "Change!" ]
-        :: viewKinds settings.kinds
+    viewKinds settings.kinds
         |> div []
 
 

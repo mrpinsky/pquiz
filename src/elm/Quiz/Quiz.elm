@@ -1,6 +1,4 @@
-module Quiz.Quiz exposing (..)
-
--- (Model, Msg(Rename), init, update, view, encode)
+module Quiz.Quiz exposing (Quiz, Msg, init, update, view, encode, decoder)
 -- Elm Packages
 
 import Css
