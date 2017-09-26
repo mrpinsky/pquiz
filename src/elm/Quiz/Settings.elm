@@ -7,70 +7,72 @@ import Css.Colors
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Quiz.Kind as Kind
-    exposing
-        ( Kind
-        , update
-        , view
-        , defaultKinds
-        , encodeKind
-        , kindDecoder
-        )
+import Quiz.Kind as Kind exposing (Kind)
 import Util exposing ((=>), delta)
 import Html exposing (..)
 import Html.Events exposing (..)
 
 
 type alias Settings =
-    { kinds : Kind.KindSettings
+    { kinds : Kinds
     , tally : Bool
     , groupWidth : Css.Px
     }
 
 
+type alias Kinds
+    = List (KindId, Kind)
+
+
+type alias KindId = String
+
+
+getKind : KindId -> Kinds -> Maybe Kind
+getKind target kinds =
+    kinds
+        |> List.filter (\(id, _) -> id == target) 
+        |> List.head
+        |> Maybe.map Tuple.second
+
+
 default : Settings
 default =
-    { kinds = defaultKinds
+    { kinds = []
     , tally = False
-    , groupWidth = Css.px 100
+    , groupWidth = Css.px 200
     }
 
 
 type Msg
-    = KindMsg String Kind.Msg
+    = KindMsg KindId Kind.Msg
 
 
 update : Msg -> Settings -> Settings
 update msg settings =
     case msg of
-        KindMsg label kindMsg ->
+        KindMsg target kindMsg ->
             let
-                updateHelper =
-                     Kind.update kindMsg
-                        |> Maybe.map
-
-                newKinds =
-                     Dict.update label updateHelper settings.kinds 
+                updateHelper (id, kind) =
+                    if id == target then (id, Kind.update kindMsg kind) else
+                        (id, kind)
             in
-                { settings | kinds = newKinds }
+                { settings | kinds = List.map updateHelper settings.kinds }
 
 
 view : Settings -> Html Msg
 view settings =
-    viewKinds settings.kinds
-        |> div []
+    div [] <| viewKinds settings.kinds
 
 
-viewKinds : Kind.KindSettings -> List (Html Msg)
-viewKinds kindSettings =
-    Dict.toList kindSettings
-        |> List.map viewKindHelper  
+viewKinds : Kinds -> List (Html Msg)
+viewKinds kinds =
+    List.map viewKindHelper kinds
 
 
-viewKindHelper : (String, Kind) -> Html Msg
-viewKindHelper (label, kind) =
+viewKindHelper : (KindId, Kind) -> Html Msg
+viewKindHelper (id, kind) =
     Kind.view kind
-        |> Html.map (KindMsg label)
+        |> Html.map (KindMsg id)
 
 
 -- JSON
@@ -85,13 +87,13 @@ encode settings =
         ]
 
 
-encodeKinds : Kind.KindSettings -> Encode.Value
+encodeKinds : Kinds -> Encode.Value
 encodeKinds kinds =
     let
-        encodeHelper ( key, kind ) =
-            ( key, encodeKind kind )
+        encodeHelper ( id, kind ) =
+            ( id, Kind.encode kind )
     in
-        Dict.toList kinds
+        kinds
             |> List.map encodeHelper
             |> Encode.object
 
@@ -105,9 +107,9 @@ decoder =
         (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
 
 
-kindsDecoder : Decode.Decoder Kind.KindSettings
+kindsDecoder : Decode.Decoder Kinds
 kindsDecoder =
-    Decode.dict kindDecoder
+    Decode.keyValuePairs Kind.decoder
 
 
 
@@ -124,15 +126,15 @@ toggleTally settings =
     { settings | tally = not settings.tally }
 
 
-insertKind : String -> Kind -> Settings -> Settings
+insertKind : KindId -> Kind -> Settings -> Settings
 insertKind name kind settings =
+    { settings | kinds = settings.kinds ++ List.singleton (name, kind) }
+
+
+removeKind : KindId -> Settings -> Settings
+removeKind target settings =
     let
-        newKinds =
-            Dict.insert name kind settings.kinds
+        removeHelper (id, _) =
+            id == target
     in
-        { settings | kinds = newKinds }
-
-
-removeKind : String -> Settings -> Settings
-removeKind name settings =
-    { settings | kinds = Dict.remove name settings.kinds }
+        { settings | kinds = List.filter removeHelper settings.kinds }

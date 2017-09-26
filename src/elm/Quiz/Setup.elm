@@ -96,10 +96,10 @@ update msg setup =
 -- VIEW
 
 view : Setup -> Html Msg
-view setup =
+view { settings, observations } =
     div []
-        [ viewObservations (Dict.keys setup.settings.kinds) setup.observations
-        , Settings.view setup.settings
+        [ viewObservations (Dict.keys settings.kinds) observations
+        , Settings.view settings
             |> Html.map UpdateSettings
         ]
 

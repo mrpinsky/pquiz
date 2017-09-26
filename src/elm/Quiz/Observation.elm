@@ -18,7 +18,15 @@ import Util exposing ((=>), checkmark, emdash, styles)
 
 
 type Observation
-    = Observation String String State
+    = Observation Kind Label State
+
+
+type Kind
+    = Kind String
+
+
+type Label
+    = Label String
 
 
 type State
@@ -28,7 +36,7 @@ type State
 
 init : String -> String -> Int -> Observation
 init kind label tally =
-    Observation kind label (Active tally)
+    Observation (Kind kind) (Label label) (Active tally)
 
 
 relabel : String -> Observation -> Observation
