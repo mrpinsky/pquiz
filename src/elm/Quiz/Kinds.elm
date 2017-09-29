@@ -12,20 +12,28 @@ import Util exposing (Tagged, (=>), delta, encodeColor, colorDecoder)
 type alias Kinds =
     List Kind
 
-
 type alias Kind =
-    Tagged Id Style
-
+    Style (Tagged Id)
 
 type Id
     = Id Int
 
 
-type alias Style =
-    { symbol : String
+type alias Style r =
+    { r | symbol : String
     , label : String
     , color : Color
     , weight : Int
+    }
+
+
+buildKind : Int -> String -> String -> Color -> Int -> Kind
+buildKind id symbol label color weight =
+    { tag = Id id
+    , symbol = symbol
+    , label = label
+    , color = color
+    , weight = weight
     }
 
 
@@ -56,7 +64,7 @@ update (Update target subMsg) kinds =
         List.map updateHelper kinds
 
 
-updateStyle : StyleMsg -> Style -> Style
+updateStyle : StyleMsg -> Style r -> Style r 
 updateStyle msg style =
     case msg of
         UpdateSymbol symbol ->
@@ -83,7 +91,7 @@ viewKind kind =
     Html.map (Update kind.tag) <| viewStyle kind
 
 
-viewStyle : Style -> Html StyleMsg
+viewStyle : Style r -> Html StyleMsg
 viewStyle style =
     Html.form
         []
@@ -127,20 +135,27 @@ viewStyle style =
         ]
 
 
-encode : Style -> Encode.Value
-encode style =
+encode : Kind -> Encode.Value
+encode kind =
     Encode.object
-        [ "symbol" => Encode.string style.symbol
-        , "label" => Encode.string style.label
-        , "color" => encodeColor style.color
-        , "weight" => Encode.int style.weight
+        [ "id" => encodeId kind.tag
+        , "symbol" => Encode.string kind.symbol
+        , "label" => Encode.string kind.label
+        , "color" => encodeColor kind.color
+        , "weight" => Encode.int kind.weight
         ]
 
 
-decoder : Decode.Decoder Style
+encodeId : Id -> Encode.Value
+encodeId (Id id) =
+    Encode.int id
+
+
+decoder : Decode.Decoder Kind
 decoder =
-    Decode.map4
-        Style
+    Decode.map5
+        buildKind
+        (Decode.field "id" Decode.int)
         (Decode.field "symbol" Decode.string)
         (Decode.field "label" Decode.string)
         (Decode.field "color" colorDecoder)
