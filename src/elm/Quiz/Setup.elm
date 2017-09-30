@@ -1,10 +1,10 @@
 module Quiz.Setup exposing (..)
 
-import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import KeyedList exposing (KeyedList, Key)
+import Quiz.Kind as Kind exposing (Kind)
 import Quiz.Settings as Settings exposing (Settings)
 
 main =
@@ -32,16 +32,12 @@ init =
 
 
 type ProtoObservation
-    = Proto String String
+    = Proto (Maybe Kind.Id) String
 
 
-newProto : List String -> ProtoObservation
+newProto : List Kind.Id -> ProtoObservation
 newProto kinds =
-    let
-        kind = List.head kinds
-            |> Maybe.withDefault ""
-    in
-        Proto kind ""
+    Proto (List.head kinds) ""
 
 
 relabel : String -> ProtoObservation -> ProtoObservation
@@ -49,9 +45,9 @@ relabel label (Proto kind _) =
     Proto kind label
 
 
-rekind : String -> ProtoObservation -> ProtoObservation
+rekind : Kind.Id -> ProtoObservation -> ProtoObservation
 rekind kind (Proto _ label) =
-    Proto kind label
+    Proto (Just kind) label
 
 
 -- UPDATE
@@ -60,7 +56,7 @@ rekind kind (Proto _ label) =
 type Msg
     = AddObservation
     | Relabel Key String
-    | Rekind Key String
+    | Rekind Key Kind.Id
     | RemoveObservation Key
     | UpdateSettings Settings.Msg
 
@@ -69,9 +65,14 @@ update : Msg -> Setup -> Setup
 update msg setup =
     case msg of
         AddObservation ->
+            let
+                proto =
+                    Settings.listKinds setup.settings
+                        |> newProto
+            in
             { setup
                 | observations =
-                    KeyedList.push (newProto <| Dict.keys setup.settings.kinds) setup.observations
+                    KeyedList.push proto setup.observations
             }
 
         Relabel key label ->
@@ -98,13 +99,13 @@ update msg setup =
 view : Setup -> Html Msg
 view { settings, observations } =
     div []
-        [ viewObservations (Dict.keys settings.kinds) observations
+        [ viewObservations settings.kinds observations
         , Settings.view settings
             |> Html.map UpdateSettings
         ]
 
 
-viewObservations : List String -> KeyedList ProtoObservation -> Html Msg
+viewObservations : List Kind -> KeyedList ProtoObservation -> Html Msg
 viewObservations kinds observations =
     div [] 
         [ ul [] <|
@@ -113,10 +114,10 @@ viewObservations kinds observations =
         ]
 
 
-viewObservation : List String -> KeyedList.Key -> ProtoObservation -> Html Msg
+viewObservation : List Kind -> KeyedList.Key -> ProtoObservation -> Html Msg
 viewObservation kinds key (Proto kind label) =
     li []
-        [ viewKindSelector kinds key kind
+        [ select [ onInput (Rekind key) ] <| viewKindOptions kind kinds
         , input
             [ value label
             , onInput (Relabel key)
@@ -125,13 +126,14 @@ viewObservation kinds key (Proto kind label) =
         ]
 
 
-viewKindSelector : List String -> KeyedList.Key -> String -> Html Msg
-viewKindSelector kinds key kind =
-    List.map (viewKindOption kind) kinds
-        |> select [ onInput (Rekind key) ]
+viewKindOptions : Maybe Kind.Id -> List Kind -> List (Html Msg)
+viewKindOptions current kinds =
+    List.map (viewKindOption current) kinds
 
 
-viewKindOption : String -> String -> Html Msg
-viewKindOption current kind =
-    option [ selected <| kind == current ] [ Html.text kind ]
+viewKindOption : Maybe Kind.Id -> Kind -> Html Msg
+viewKindOption selected kind =
+    option
+        [ selected <| selected == (Just kind.tag) ]
+        [ Html.text kind.label ]
 

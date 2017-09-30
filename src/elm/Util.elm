@@ -10,10 +10,6 @@ import Json.Decode as Decode
 import KeyedList exposing (KeyedList)
 
 
-type alias Tagged tag =
-    { tag : tag }
-
-
 (=>) : a -> b -> ( a, b )
 (=>) =
     (,)

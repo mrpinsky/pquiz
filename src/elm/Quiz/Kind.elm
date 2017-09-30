@@ -1,4 +1,16 @@
-module Quiz.Kinds exposing (Kinds, Style, Msg, update, view, encode, decoder)
+module Quiz.Kind
+    exposing
+        ( Kind
+        , Style
+        , Id
+        , Msg
+        , update
+        , view
+        , encode
+        , decoder
+        , encodeId
+        , idDecoder
+        )
 
 import Css exposing (Color)
 import Html exposing (..)
@@ -6,35 +18,31 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
-import Util exposing (Tagged, (=>), delta, encodeColor, colorDecoder)
+import Tagged exposing (Tagged)
+import Util exposing ((=>), delta, encodeColor, colorDecoder)
 
-
-type alias Kinds =
-    List Kind
 
 type alias Kind =
-    Style (Tagged Id)
-
-type Id
-    = Id Int
-
-
-type alias Style r =
-    { r | symbol : String
+    { tag : Id
+    , symbol : String
     , label : String
     , color : Color
     , weight : Int
     }
 
 
-buildKind : Int -> String -> String -> Color -> Int -> Kind
-buildKind id symbol label color weight =
-    { tag = Id id
-    , symbol = symbol
-    , label = label
-    , color = color
-    , weight = weight
+type Id
+    = Id String
+
+
+type alias Style r =
+    { r
+        | symbol : String
+        , label : String
+        , color : Color
+        , weight : Int
     }
+
 
 
 -- UPDATE
@@ -51,20 +59,12 @@ type StyleMsg
     | UpdateWeight Int
 
 
-update : Msg -> Kinds -> Kinds
-update (Update target subMsg) kinds =
-    let
-        updateHelper : Kind -> Kind
-        updateHelper kind =
-            if kind.tag == target then
-                updateStyle subMsg kind
-            else
-                kind
-    in
-        List.map updateHelper kinds
+update : Msg -> Kind -> Kind
+update (Update target subMsg) kind =
+    Tagged.update (updateStyle subMsg) target kind
 
 
-updateStyle : StyleMsg -> Style r -> Style r 
+updateStyle : StyleMsg -> Style r -> Style r
 updateStyle msg style =
     case msg of
         UpdateSymbol symbol ->
@@ -80,14 +80,8 @@ updateStyle msg style =
             { style | weight = weight }
 
 
-
-view : Kinds -> Html Msg
-view kinds =
-    div [] <| List.map viewKind kinds
-
-
-viewKind : Kind -> Html Msg
-viewKind kind =
+view : Kind -> Html Msg
+view kind =
     Html.map (Update kind.tag) <| viewStyle kind
 
 
@@ -148,18 +142,23 @@ encode kind =
 
 encodeId : Id -> Encode.Value
 encodeId (Id id) =
-    Encode.int id
+    Encode.string id
 
 
 decoder : Decode.Decoder Kind
 decoder =
     Decode.map5
-        buildKind
-        (Decode.field "id" Decode.int)
+        Kind
+        (Decode.field "id" idDecoder)
         (Decode.field "symbol" Decode.string)
         (Decode.field "label" Decode.string)
         (Decode.field "color" colorDecoder)
         (Decode.field "weight" Decode.int)
+
+
+idDecoder : Decode.Decoder Id
+idDecoder =
+    Decode.map Id Decode.string
 
 
 
