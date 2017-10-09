@@ -93,13 +93,13 @@ onEnter msg =
         on "keydown" (Decode.andThen isEnter keyCode)
 
 
-onContentEdit : (String -> msg) -> Attribute msg
-onContentEdit tagger =
+onChange : (String -> msg) -> Attribute msg
+onChange tagger =
     let
         innerHtmlDecoder =
-            Decode.at [ "target", "innerHTML" ] Decode.string
+            Decode.at [ "target", "value" ] Decode.string
     in
-        on "blur" (Decode.map tagger innerHtmlDecoder)
+        on "change" (Decode.map tagger innerHtmlDecoder)
 
 
 styles : List Css.Style -> Html.Attribute msg
