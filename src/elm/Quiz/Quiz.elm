@@ -1,4 +1,5 @@
-module Quiz.Quiz exposing (Quiz, Msg, init, update, view, encode, decoder)
+module Quiz.Quiz exposing (Quiz, Msg, init, update, view, encode, decoder, default)
+
 -- Elm Packages
 
 import Css
@@ -9,9 +10,10 @@ import Html.Lazy exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import KeyedList exposing (KeyedList, Key)
-import Quiz.Settings as Settings exposing (Settings)
 import Quiz.Group as Group exposing (Group)
-import Util exposing ((=>), keyedListDecoder, encodeKeyedList, styles)
+import Quiz.Observation as Observation exposing (Observation)
+import Quiz.Settings as Settings exposing (Settings)
+import Util exposing ((=>), keyedListDecoder, encodeKeyedList, styles, viewWithRemoveButton)
 
 
 -- MODEL
@@ -40,30 +42,32 @@ decoder =
 
 default : Quiz
 default =
-    let
-        groups =
-            blankGroups 8
-    in
-        Quiz "Unnamed Quiz" groups
+    blankGroups 8
+        |> Quiz "Unnamed Quiz"
 
 
 blankGroups : Int -> KeyedList Group
 blankGroups count =
+    withGroups count []
+
+
+withGroups : Int -> List Observation -> KeyedList Group
+withGroups count observations =
     List.range 1 count
-        |> List.map numberedGroup
+        |> List.map (numberedGroup observations)
         |> KeyedList.fromList
 
 
-numberedGroup : Int -> Group
-numberedGroup n =
-    Group.init ("Group " ++ toString n) []
+numberedGroup : List Observation -> Int -> Group
+numberedGroup observations n =
+    Group.init ("Group " ++ toString n) observations
 
 
-init : Maybe Decode.Value -> Quiz
-init json =
-    json
-        |> Maybe.andThen (Decode.decodeValue decoder >> Result.toMaybe)
-        |> Maybe.withDefault default
+init : String -> List Observation -> Quiz
+init title observations =
+    observations
+        |> withGroups 8
+        |> Quiz title
 
 
 
@@ -168,13 +172,6 @@ menuButton msg label =
 
 viewKeyedGroup : Settings -> Key -> Group -> Html Msg
 viewKeyedGroup settings key group =
-    let
-        inner =
-            Group.view settings group
-                |> Html.map (UpdateGroup key)
-    in
-        div []
-            [ inner
-            , button [ onClick (RemoveGroup key) ]
-                [ text "x" ]
-            ]
+    Group.view settings group
+        |> Html.map (UpdateGroup key)
+        |> viewWithRemoveButton (RemoveGroup key)

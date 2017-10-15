@@ -12,9 +12,9 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
-import Util exposing (..)
+import Quiz.Observation.Options as Options
 import Quiz.Settings as Settings exposing (..)
-import Quiz.Kind exposing (Kind)
+import Util exposing (..)
 
 
 main : Program Never Group Msg
@@ -143,7 +143,7 @@ viewLabel label =
     div
         [ class "title"
         , contenteditable True
-        , onContentEdit Relabel
+        , onChange Relabel
         ]
         [ text label ]
 
@@ -153,7 +153,7 @@ viewTally settings observations =
     let
         total =
             KeyedList.toList observations
-                |> List.map (Observation.value settings.kinds)
+                |> List.map (Observation.value settings.options)
                 |> List.sum
     in
         total
@@ -164,34 +164,33 @@ viewTally settings observations =
                 [ classList
                     [ ( "points", True )
                     , ( "hidden", not settings.tally )
-
-                    --     , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
-                    --     , ( "pos", total > 0 )
+                    , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
+                    , ( "pos", total > 0 )
                     ]
                 ]
 
 
-viewButtons : Settings -> List (Html Msg)
-viewButtons settings =
-    Dict.toList settings.kinds
+viewButtons : Options.Options -> List (Html Msg)
+viewButtons options =
+    Options.toList options
         |> List.map viewButton
 
 
-viewButton : ( String, Kind ) -> Html Msg
-viewButton ( label, kind ) =
+viewButton : Options.Option -> Html Msg
+viewButton option =
     button
-        [ onClick <| StartNew label
+        [ onClick <| StartNew option.id
         , class "input-button"
-        , styles [ Css.backgroundColor kind.color ]
+        , styles [ Css.backgroundColor option.color ]
         ]
-        [ text kind.symbol ]
+        [ text option.label ]
 
 
 viewInput : Settings -> State -> Html Msg
 viewInput settings state =
     case state of
         Waiting ->
-            viewButtons settings
+            viewButtons settings.options
                 |> div [ class "group-input buttons" ]
 
         Entering kind description ->
@@ -217,12 +216,6 @@ viewObservations settings observations =
 
 viewKeyedObservation : Settings -> Key -> Observation -> Html Msg
 viewKeyedObservation settings key observation =
-    let
-        inner =
-            Observation.view settings observation
-                |> Html.map (UpdateExisting key)
-    in
-        li []
-            [ inner
-            , button [ onClick (Delete key) ] [ text "x" ]
-            ]
+    Observation.view settings observation
+        |> Html.map (UpdateExisting key)
+        |> viewWithRemoveButton (Delete key)

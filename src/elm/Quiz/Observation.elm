@@ -10,7 +10,7 @@ import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Quiz.Kind as Kind exposing (KindSettings)
+import Quiz.Observation.Options as Options exposing (Options)
 import Util exposing ((=>), checkmark, emdash, styles)
 
 
@@ -18,11 +18,7 @@ import Util exposing ((=>), checkmark, emdash, styles)
 
 
 type Observation
-    = Observation Kind Label State
-
-
-type Kind
-    = Kind String
+    = Observation Options.Id Label State
 
 
 type Label
@@ -34,18 +30,18 @@ type State
     | Active Int
 
 
-init : String -> String -> Int -> Observation
-init kind label tally =
-    Observation (Kind kind) (Label label) (Active tally)
+init : Options.Id -> String -> Int -> Observation
+init optionId label tally =
+    Observation optionId (Label label) (Active tally)
 
 
 relabel : String -> Observation -> Observation
-relabel newLabel (Observation kind label tally) =
-    Observation kind newLabel tally
+relabel newLabel (Observation optionId label tally) =
+    Observation optionId (Label newLabel) tally
 
 
-value : KindSettings -> Observation -> Int
-value kinds (Observation kind _ state) =
+value : Options.Options -> Observation -> Int
+value options (Observation optionId _ state) =
     case state of
         Struck ->
             0
@@ -53,7 +49,7 @@ value kinds (Observation kind _ state) =
         Active tally ->
             let
                 weight =
-                    Dict.get kind kinds
+                    Options.lookup optionId options
                         |> Maybe.map .weight
                         |> Maybe.withDefault 1
             in
@@ -69,15 +65,20 @@ decoder : Decoder Observation
 decoder =
     Decode.map3
         Observation
-        (Decode.field "kind" Decode.string)
-        (Decode.field "label" Decode.string)
+        (Decode.field "optionId" Decode.string)
+        (Decode.field "label" labelDecoder)
         (Decode.field "state" stateDecoder)
 
 
+labelDecoder : Decoder Label
+labelDecoder =
+    Decode.map Label Decode.string
+
+
 encode : Observation -> Encode.Value
-encode (Observation kind label state) =
+encode (Observation optionId (Label label) state) =
     Encode.object
-        [ "kind" => Encode.string kind
+        [ "optionId" => Encode.string optionId
         , "state" => Encode.int (stateToInt state)
         , "label" => Encode.string label
         ]
@@ -117,24 +118,24 @@ type Msg
 
 
 update : Msg -> Observation -> Observation
-update msg (Observation kind label state) =
+update msg (Observation optionId label state) =
     case msg of
         Relabel newLabel ->
-            Observation kind newLabel state
+            Observation optionId (Label newLabel) state
 
         Increment ->
             case state of
                 Struck ->
-                    Observation kind label Struck
+                    Observation optionId label Struck
 
                 Active tally ->
                     tally
                         + 1
                         |> Active
-                        |> Observation kind label
+                        |> Observation optionId label
 
         Strike ->
-            Observation kind label Struck
+            Observation optionId label Struck
 
 
 
@@ -142,18 +143,18 @@ update msg (Observation kind label state) =
 
 
 view : Settings.Settings -> Observation -> Html Msg
-view settings (Observation kind label state) =
+view settings (Observation optionId (Label label) state) =
     let
-        kindSettings =
-            Dict.get kind settings.kinds
+        option =
+            Options.lookup optionId settings.options
 
         symbol =
-            kindSettings
+            option
                 |> Maybe.map .symbol
                 |> Maybe.withDefault checkmark
 
         bgColor =
-            kindSettings
+            option
                 |> Maybe.map .color
                 |> Maybe.withDefault (Css.hex "ffffff")
     in

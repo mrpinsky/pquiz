@@ -10,6 +10,7 @@ module Quiz.Observation.Options
         , toList
         , idList
         , lookup
+        , first
         , encode
         , decoder
         )
@@ -23,7 +24,7 @@ import Json.Encode as Encode
 import List.Nonempty as NE exposing (Nonempty, (:::))
 import Quiz.Observation.Style as Style exposing (Style)
 import Tagged exposing (Tagged)
-import Util exposing ((=>), encodeColor, colorDecoder)
+import Util exposing ((=>), encodeColor, colorDecoder, viewWithRemoveButton)
 
 
 -- MODEL
@@ -37,7 +38,7 @@ type alias Option =
     { id : String
     , symbol : String
     , label : String
-    , color: Css.Color
+    , color : Css.Color
     , weight : Int
     }
 
@@ -53,6 +54,16 @@ init =
         |> Options 1
 
 
+initOption : String -> Option
+initOption id =
+    { id = id
+    , symbol = ""
+    , label = ""
+    , color = Colors.green
+    , weight = 1
+    }
+
+
 defaultOption : Option
 defaultOption =
     { id = "default"
@@ -61,6 +72,11 @@ defaultOption =
     , color = Colors.green
     , weight = 1
     }
+
+
+first : Options -> Option
+first (Options _ options) =
+    NE.head options
 
 
 toList : Options -> List Option
@@ -99,7 +115,8 @@ update : Msg -> Options -> Options
 update msg (Options nextId options) =
     case msg of
         Add ->
-            { defaultOption | id = toString nextId }
+            toString nextId
+                |> initOption
                 |> NE.fromElement
                 |> NE.append options
                 |> Options (nextId + 1)
@@ -143,6 +160,7 @@ viewOption : Option -> Html Msg
 viewOption option =
     Style.view option
         |> Html.map (UpdateStyle option.id)
+        |> viewWithRemoveButton (Remove option.id)
 
 
 
@@ -172,7 +190,10 @@ decoder : Decode.Decoder Options
 decoder =
     Decode.list optionDecoder
         |> Decode.map NE.fromList
-        |> Decode.map (Maybe.withDefault <| NE.fromElement defaultOption)
+        |> Decode.map
+            (Maybe.withDefault <|
+                NE.fromElement (initOption "default")
+            )
         |> Decode.andThen extractNextId
 
 

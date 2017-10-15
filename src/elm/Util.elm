@@ -2,9 +2,9 @@ module Util exposing (..)
 
 import Char
 import Css exposing (Color)
-import Html exposing (Attribute)
+import Html exposing (Html, Attribute, div, button, text)
 import Html.Attributes
-import Html.Events exposing (on, keyCode)
+import Html.Events exposing (on, keyCode, onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import KeyedList exposing (KeyedList)
@@ -43,22 +43,6 @@ encodeMaybe encoder maybe =
 
         Just x ->
             encoder x
-
-
-ordinal : Int -> String
-ordinal n =
-    case n of
-        1 ->
-            "first"
-
-        2 ->
-            "second"
-
-        3 ->
-            "third"
-
-        _ ->
-            "nth"
 
 
 stringFromCode : Int -> String
@@ -100,6 +84,14 @@ onChange tagger =
             Decode.at [ "target", "value" ] Decode.string
     in
         on "change" (Decode.map tagger innerHtmlDecoder)
+
+
+viewWithRemoveButton : msg -> Html msg -> Html msg
+viewWithRemoveButton msg html =
+    div []
+        [ html
+        , button [ onClick msg ] [ text "x" ]
+        ]
 
 
 styles : List Css.Style -> Html.Attribute msg

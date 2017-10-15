@@ -1,13 +1,16 @@
-module Quiz.Setup exposing (..)
+module Setup exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import KeyedList exposing (KeyedList, Key)
+import Quiz.App as PQuiz
+import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Observation.Options as Options exposing (Options)
 import Quiz.Observation.Style as Style exposing (Style)
+import Quiz.Quiz as Quiz exposing (Quiz)
 import Quiz.Settings as Settings exposing (Settings)
-import Util exposing (onChange)
+import Util exposing (onChange, viewWithRemoveButton)
 
 
 main =
@@ -54,6 +57,22 @@ rekind kind (Proto _ label) =
     Proto (Just kind) label
 
 
+toQuiz : Setup -> PQuiz.Model
+toQuiz { observations, settings } =
+    observations
+        |> KeyedList.toList
+        |> List.map (realizeProto <| .id <| Options.first settings.options)
+        |> Quiz.init "Participation Quiz"
+        |> PQuiz.init settings
+
+
+realizeProto : Options.Id -> ProtoObservation -> Observation
+realizeProto defaultOption (Proto maybeOption label) =
+    Observation.init
+        (Maybe.withDefault defaultOption maybeOption)
+        label
+        0
+
 
 -- UPDATE
 
@@ -96,10 +115,7 @@ update msg setup =
             { setup | observations = KeyedList.remove key setup.observations }
 
         UpdateSettings subMsg ->
-            { setup
-                | settings = Settings.update subMsg setup.settings
-                , observations = 
-            }
+            { setup | settings = Settings.update subMsg setup.settings }
 
 
 
@@ -109,7 +125,10 @@ update msg setup =
 view : Setup -> Html Msg
 view { settings, observations } =
     div []
-        [ viewObservations settings.options observations
+        [ h1 [] [ text "Set up your Quiz" ]
+        , h2 [] [ text "Default Observations" ]
+        , viewObservations settings.options observations
+        , h2 [] [ text "Observation Categories" ]
         , Settings.view settings
             |> Html.map UpdateSettings
         ]
@@ -118,10 +137,15 @@ view { settings, observations } =
 viewObservations : Options -> KeyedList ProtoObservation -> Html Msg
 viewObservations options observations =
     div []
-        [ ul [] <|
-            KeyedList.keyedMap (viewObservation options) observations
+        [ ul [] <| KeyedList.keyedMap (viewRemovableObservation options) observations
         , button [ onClick AddObservation ] [ Html.text "+" ]
         ]
+
+
+viewRemovableObservation : Options -> KeyedList.Key -> ProtoObservation -> Html Msg
+viewRemovableObservation options key proto =
+    viewObservation options key proto
+        |> viewWithRemoveButton (RemoveObservation key)
 
 
 viewObservation : Options -> KeyedList.Key -> ProtoObservation -> Html Msg
@@ -142,5 +166,7 @@ viewObservation options key (Proto kind label) =
 viewStyleOption : Maybe Options.Id -> Options.Option -> Html Msg
 viewStyleOption currentlySelected { id, label } =
     option
-        [ selected <| currentlySelected == Just id ]
+        [ selected <| currentlySelected == Just id
+        , value id
+        ]
         [ Html.text label ]
