@@ -44,7 +44,7 @@ init settings =
 
 buildGroups : Int -> Settings -> KeyedList Group
 buildGroups count settings =
-    Settings.defaultObservations settings
+    Settings.defaultKeys settings
         |> withGroups count
 
 
@@ -53,16 +53,16 @@ blankGroups count =
     withGroups count []
 
 
-withGroups : Int -> List Observation -> KeyedList Group
-withGroups count observations =
+withGroups : Int -> List String -> KeyedList Group
+withGroups count defaultKeys  =
     List.range 1 count
-        |> List.map (numberedGroup observations)
+        |> List.map (numberedGroup defaultKeys)
         |> KeyedList.fromList
 
 
-numberedGroup : List Observation -> Int -> Group
-numberedGroup observations n =
-    Group.init ("Group " ++ toString n) observations
+numberedGroup : List String -> Int -> Group
+numberedGroup defaultKeys n =
+    Group.init ("Group " ++ toString n) defaultKeys
 
 
 
@@ -100,7 +100,7 @@ update msg model =
         AddGroup groupName ->
             let
                 newGroup =
-                    Settings.defaultObservations model.settings
+                    Settings.defaultKeys model.settings
                         |> Group.init groupName
             in
                 { model | groups = KeyedList.push newGroup model.groups }
@@ -164,11 +164,11 @@ styledButton className msg label =
 -- JSON
 
 
-encodeGroups : KeyedList Group -> Encode.Value
-encodeGroups groups =
-    encodeKeyedList Group.encode groups
+-- encodeGroups : KeyedList Group -> Encode.Value
+-- encodeGroups groups =
+--     encodeKeyedList Group.encode groups
 
 
-groupsDecoder : Decode.Decoder (KeyedList Group)
-groupsDecoder =
-    keyedListDecoder Group.decoder
+-- groupsDecoder : Decode.Decoder (KeyedList Group)
+-- groupsDecoder =
+--     keyedListDecoder Group.decoder

@@ -1,8 +1,8 @@
-module Quiz.Group exposing (Group, Msg, init, update, view, encode, decoder)
+module Quiz.Group exposing (Group, Msg, init, update, view)
 
 import Css
 import Css.Colors
-import Dict
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
@@ -12,8 +12,9 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
-import Quiz.Observation.Options as Options
+import Quiz.Observation.Record as Record exposing (Record)
 import Quiz.Settings as Settings exposing (..)
+import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
 
 
@@ -30,95 +31,124 @@ main =
 -- MODEL
 
 
-type Group
-    = Group String (KeyedList Observation) State
+type alias Group =
+    { current : Maybe Observation
+    , label : String
+    , records : KeyedList Record
+    , defaults : Dict String Int
+    }
 
 
-type State
-    = Waiting
-    | Entering String String
+init : String -> List String -> Group
+init label defaultKeys =
+    defaultKeys
+        |> List.map initDefaultRecord
+        |> Dict.fromList
+        |> Group Nothing label KeyedList.empty
 
 
-init : String -> List Observation -> Group
-init label observations =
-    Group label (KeyedList.fromList observations) Waiting
-
-
-encode : Group -> Encode.Value
-encode (Group label observations state) =
-    Encode.object
-        [ "label" => Encode.string label
-        , "observations"
-            => (KeyedList.toList observations
-                    |> List.map Observation.encode
-                    |> Encode.list
-               )
-        ]
-
-
-decoder : Decode.Decoder Group
-decoder =
-    Decode.map2
-        init
-        (Decode.field "label" Decode.string)
-        (Decode.field "observations" <| Decode.list Observation.decoder)
+initDefaultRecord : String -> ( String, Int )
+initDefaultRecord key =
+    ( key, 0 )
 
 
 
+-- encode : Group -> Encode.Value
+-- encode { label, records, defaults } =
+--     Encode.object
+--         [ "label" => Encode.string label
+--         , "records" => encodeRecords records
+--         , "defaults" => encodeDefaults defaults
+--         ]
+-- encodeRecords : KeyedList Record -> Encode.Value
+-- encodeRecords records =
+--     KeyedList.toList records
+--         |> List.map Record.encode
+--         |> Encode.list
+-- encodeDefaults : Dict String Int -> Encode.Value
+-- encodeDefaults defaults =
+--     defaults
+--         |> Dict.toList
+--         |> List.map (Tuple.mapSecond Encode.int)
+--         |> Encode.object
+-- decoder : Decode.Decoder Group
+-- decoder =
+--     Decode.map3
+--         (Group Nothing)
+--         (Decode.field "label" Decode.string)
+--         (Decode.field "records" <| recordsDecoder)
+--         (Decode.field "defaults" <| defaultsDecoder)
+-- recordsDecoder : Decode.Decoder (KeyedList Record)
+-- recordsDecoder =
+--     Decode.map KeyedList.fromList <| Decode.list Record.decoder
+-- defaultsDecoder : Decode.Decoder (Dict String Int)
+-- defaultsDecoder =
+--     Decode.dict Decode.int
 -- UPDATE
 
 
 type Msg
-    = StartNew String
-    | UpdateCurrent String
-    | SaveCurrent
-    | UpdateExisting Key Observation.Msg
+    = StartNew Theme.Id
+    | UpdateCurrent Observation.Msg
+    | Commit
+    | IncrementDefault String
+    | UpdateRecord Key Record.Msg
     | Delete Key
     | Relabel String
 
 
 update : Msg -> Group -> Group
-update msg (Group label observations state) =
+update msg group =
     case msg of
-        StartNew kind ->
-            Group label observations (Entering kind "")
+        StartNew topicId ->
+            { group | current = Just <| Observation.init topicId }
 
-        UpdateCurrent newDescription ->
-            case state of
-                Waiting ->
-                    Group label observations Waiting
+        UpdateCurrent subMsg ->
+            { group
+                | current =
+                    Maybe.map (Observation.update subMsg) group.current
+            }
 
-                Entering kind description ->
-                    Group label observations (Entering kind newDescription)
+        Commit ->
+            { group
+                | current = Nothing
+                , records = commit group.current group.records
+            }
 
-        SaveCurrent ->
-            case state of
-                Waiting ->
-                    Group label observations Waiting
+        IncrementDefault defaultId ->
+            { group | defaults = Dict.update defaultId incrementDefault group.defaults }
 
-                Entering kind description ->
-                    let
-                        newObservations =
-                            KeyedList.cons (Observation.init kind description 1) observations
-                    in
-                        Group label newObservations Waiting
-
-        UpdateExisting key submsg ->
-            let
-                newObservations =
-                    KeyedList.update key (Observation.update submsg) observations
-            in
-                Group label newObservations state
+        UpdateRecord key submsg ->
+            { group
+                | records =
+                    KeyedList.update key
+                        (Record.update submsg)
+                        group.records
+            }
 
         Delete key ->
-            let
-                newObservations =
-                    KeyedList.remove key observations
-            in
-                Group label newObservations state
+            { group | records = KeyedList.remove key group.records }
 
         Relabel newLabel ->
-            Group newLabel observations state
+            { group | label = newLabel }
+
+
+incrementDefault : Maybe Int -> Maybe Int
+incrementDefault tally =
+    tally
+        |> Maybe.withDefault 0
+        |> (+) 1
+        |> Just
+
+
+commit : Maybe Observation -> KeyedList Record -> KeyedList Record
+commit current existing =
+    case current of
+        Nothing ->
+            existing
+
+        Just observation ->
+            KeyedList.push (Record.init observation 1) existing
 
 
 
@@ -126,15 +156,16 @@ update msg (Group label observations state) =
 
 
 view : Settings -> Group -> Html Msg
-view settings (Group label observations state) =
+view { theme, observations, groupWidth, showTally } group =
     div
         [ class "group"
-        , styles [ Css.width settings.groupWidth ]
+        , styles [ Css.width groupWidth ]
         ]
-        [ lazy viewLabel label
-        , lazy2 viewTally settings observations
-        , lazy2 viewInput settings state
-        , lazy2 viewObservations settings.options observations
+        [ lazy viewLabel group.label
+        , lazy3 viewTally theme showTally group.records
+        , lazy2 viewInput theme group.current
+        , lazy3 viewDefaults theme observations group.defaults
+        , lazy2 viewRecords theme group.records
         ]
 
 
@@ -148,12 +179,12 @@ viewLabel label =
         [ text label ]
 
 
-viewTally : Settings.Settings -> KeyedList Observation -> Html Msg
-viewTally settings observations =
+viewTally : Theme -> Bool -> KeyedList Record -> Html Msg
+viewTally theme showTally records =
     let
         total =
-            KeyedList.toList observations
-                |> List.map (Observation.value settings.options)
+            KeyedList.toList records
+                |> List.map (Record.value theme)
                 |> List.sum
     in
         total
@@ -163,59 +194,62 @@ viewTally settings observations =
             |> h2
                 [ classList
                     [ ( "points", True )
-                    , ( "hidden", not settings.tally )
+                    , ( "hidden", not showTally )
                     , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
                     , ( "pos", total > 0 )
                     ]
                 ]
 
 
-viewButtons : Options.Options -> List (Html Msg)
-viewButtons options =
-    Options.toList options
-        |> List.map viewButton
+viewInput : Theme -> Maybe Observation -> Html Msg
+viewInput theme current =
+    case current of
+        Nothing ->
+            Theme.viewAsButtons StartNew theme
+
+        Just observation ->
+            Observation.viewCreating UpdateCurrent Commit observation
+              
 
 
-viewButton : Options.Option -> Html Msg
-viewButton option =
-    button
-        [ onClick <| StartNew option.id
-        , class "input-button"
-        , styles [ Css.backgroundColor option.color ]
-        ]
-        [ text option.label ]
-
-
-viewInput : Settings -> State -> Html Msg
-viewInput settings state =
-    case state of
-        Waiting ->
-            viewButtons settings.options
-                |> div [ class "group-input buttons" ]
-
-        Entering kind description ->
-            div
-                [ class "group-input editing" ]
-                [ input
-                    [ placeholder "Observation"
-                    , value description
-                    , onEnter SaveCurrent
-                    , onInput UpdateCurrent
-
-                    -- , Html.Attributes.id <| "input-group-" ++ (toString id)
-                    ]
-                    []
-                ]
-
-
-viewObservations : Options.Options -> KeyedList Observation -> Html Msg
-viewObservations options observations =
-    KeyedList.keyedMap (viewKeyedObservation options) observations
+viewDefaults : Theme -> List (String, Observation) -> Dict String Int -> Html Msg
+viewDefaults theme defaults tallies =
+    List.map (viewDefaultObservation theme tallies) defaults
         |> ul []
 
 
-viewKeyedObservation : Options.Options -> Key -> Observation -> Html Msg
-viewKeyedObservation options key observation =
-    Observation.view options observation
-        |> Html.map (UpdateExisting key)
+viewDefaultObservation : Theme -> Dict String Int -> (String, Observation) -> Html Msg
+viewDefaultObservation theme tallies (id, observation) =
+    let
+        tally =
+            Dict.get id tallies
+                |> Maybe.withDefault 0
+
+        style =
+            Theme.lookup observation.style theme
+    in
+        li [ styles [ Css.backgroundColor style.color ] ]
+            [ button [ onClick (IncrementDefault id) ]
+                [ Html.text style.symbol
+                , Html.text <| toString tally
+                ]
+            , Html.text observation.label
+            ]
+
+
+viewRecords : Theme -> KeyedList Record -> Html Msg
+viewRecords theme records =
+    viewLocals theme records
+        |> ul []
+
+
+viewLocals : Theme -> KeyedList Record -> List (Html Msg)
+viewLocals theme records =
+    KeyedList.keyedMap (viewKeyedRecord theme) records
+
+
+viewKeyedRecord : Theme -> Key -> Record -> Html Msg
+viewKeyedRecord theme key record =
+    Record.view theme record
+        |> Html.map (UpdateRecord key)
         |> viewWithRemoveButton (Delete key)

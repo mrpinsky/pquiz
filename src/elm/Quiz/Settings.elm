@@ -7,9 +7,10 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
+import List.Nonempty as NE exposing (Nonempty)
 import Quiz.Observation as Observation exposing (Observation)
-import Quiz.Observation.Options as Options exposing (Options)
 import Quiz.Observation.Style as Style exposing (Style)
+import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util
     exposing
         ( (=>)
@@ -26,75 +27,49 @@ import Util
 
 
 type alias Settings =
-    { options : Options
-    , observations : KeyedList ProtoObservation
-    , tally : Bool
+    { theme : Theme
+    , showTally : Bool
     , groupWidth : Css.Px
+    , observations : List (ObservationId, Observation)
+    , nextId : Int
     }
 
 
-type ProtoObservation
-    = Proto (Maybe Options.Id) String
-
-
-styleIds : Settings -> List Options.Id
-styleIds { options } =
-    Options.idList options
+type alias ObservationId = String
 
 
 default : Settings
 default =
     let
-        options =
-            Options.init
+        theme =
+            Theme.init
     in
-        { options = options
-        , observations = KeyedList.fromList []
-        , tally = False
+        { theme = theme
+        , showTally = False
         , groupWidth = Css.px 200
+        , observations = []
+        , nextId = 1
         }
 
 
-defaultProto : List Options.Id -> ProtoObservation
-defaultProto options =
-    Proto (List.head options) ""
+defaultProto : Nonempty Theme.Id -> Observation
+defaultProto theme =
+    Observation (NE.head theme) ""
 
 
-relabel : String -> ProtoObservation -> ProtoObservation
-relabel label (Proto kind _) =
-    Proto kind label
-
-
-rekind : Options.Id -> ProtoObservation -> ProtoObservation
-rekind kind (Proto _ label) =
-    Proto (Just kind) label
-
-
-defaultObservations : Settings -> List Observation
-defaultObservations { options, observations } =
-    observations
-        |> KeyedList.toList
-        |> List.map (realizeProto <| .id <| Options.first options)
-
-
-realizeProto : Options.Id -> ProtoObservation -> Observation
-realizeProto defaultOption (Proto maybeOption label) =
-    Observation.init
-        (Maybe.withDefault defaultOption maybeOption)
-        label
-        0
-
+defaultKeys : Settings -> List String
+defaultKeys { observations } =
+    List.map Tuple.first observations
 
 
 -- UPDATE
 
 
 type Msg
-    = UpdateOptions Options.Msg
+    = UpdateTheme Theme.Msg
     | AddObservation
-    | Relabel Key String
-    | Rekind Key Options.Id
-    | RemoveObservation Key
+    | UpdateObservation String Observation.Msg
+    | RemoveObservation String
     | ToggleTally
     | SetGroupWidth Float
 
@@ -102,39 +77,48 @@ type Msg
 update : Msg -> Settings -> Settings
 update msg settings =
     case msg of
+
         AddObservation ->
             let
-                proto =
-                    Options.idList settings.options
-                        |> defaultProto
+                style =
+                    Theme.idList settings.theme
+                        |> NE.head
             in
                 { settings
-                    | observations =
-                        KeyedList.push proto settings.observations
+                    | observations = 
+                        (toString settings.nextId, Observation style "")
+                            |> List.singleton
+                            |> (++) settings.observations
+                    , nextId = settings.nextId + 1
                 }
 
-        Relabel key label ->
-            { settings
-                | observations =
-                    KeyedList.update key (relabel label) settings.observations
-            }
+        UpdateObservation target subMsg ->
+            let
+                updateHelper (id, observation) =
+                    if id == target then
+                        (id, Observation.update subMsg observation)
+                    else
+                        (id, observation)
+            in
+                { settings
+                    | observations = List.map updateHelper settings.observations
+                }
 
-        Rekind key kind ->
-            { settings
-                | observations =
-                    KeyedList.update key (rekind kind) settings.observations
-            }
+        RemoveObservation target ->
+            let
+                removeHelper : (String, a) -> Bool
+                removeHelper (id, _) =
+                    id /= target
+            in
+                { settings | observations = List.filter removeHelper settings.observations }
 
-        RemoveObservation key ->
-            { settings | observations = KeyedList.remove key settings.observations }
-
-        UpdateOptions optionsMsg ->
+        UpdateTheme themeMsg ->
             { settings
-                | options = Options.update optionsMsg settings.options
+                | theme = Theme.update themeMsg settings.theme
             }
 
         ToggleTally ->
-            { settings | tally = not settings.tally }
+            { settings | showTally = not settings.showTally }
 
         SetGroupWidth px ->
             { settings | groupWidth = Css.px px }
@@ -145,91 +129,58 @@ update msg settings =
 
 
 view : Settings -> Html Msg
-view { options, observations } =
+view { theme, observations } =
     div []
         [ h1 [] [ text "Set up your Quiz" ]
         , h2 [] [ text "Default Observations" ]
-        , viewObservations options observations
+        , viewObservations theme observations
         , h2 [] [ text "Observation Categories" ]
-        , Options.view options
-            |> Html.map UpdateOptions
+        , Theme.viewAsEditable theme
+            |> Html.map UpdateTheme
         ]
 
 
-viewObservations : Options -> KeyedList ProtoObservation -> Html Msg
-viewObservations options observations =
+viewObservations : Theme -> List (String, Observation) -> Html Msg
+viewObservations theme observations =
     div []
-        [ ul [] <| KeyedList.keyedMap (viewRemovableObservation options) observations
+        [ observations
+            |> List.map (viewRemovableObservation theme) 
+            |> ul []
         , button [ onClick AddObservation ] [ Html.text "+" ]
         ]
 
 
-viewRemovableObservation : Options -> KeyedList.Key -> ProtoObservation -> Html Msg
-viewRemovableObservation options key proto =
-    viewObservation options key proto
-        |> viewWithRemoveButton (RemoveObservation key)
-
-
-viewObservation : Options -> KeyedList.Key -> ProtoObservation -> Html Msg
-viewObservation options key (Proto kind label) =
-    li []
-        [ options
-            |> Options.toList
-            |> List.map (viewStyleOption kind)
-            |> select [ onChange (Rekind key) ]
-        , input
-            [ value label
-            , onInput (Relabel key)
-            ]
-            []
-        ]
-
-
-viewStyleOption : Maybe Options.Id -> Options.Option -> Html Msg
-viewStyleOption currentlySelected { id, label } =
-    option
-        [ selected <| currentlySelected == Just id
-        , value id
-        ]
-        [ Html.text label ]
-
+viewRemovableObservation : Theme -> (String, Observation) -> Html Msg
+viewRemovableObservation theme (id, observation) =
+    Observation.viewAsProto theme observation
+        |> Html.map (UpdateObservation id)
+        |> viewWithRemoveButton (RemoveObservation id)
 
 
 -- JSON
 
 
 encode : Settings -> Encode.Value
-encode { options, observations, tally, groupWidth } =
+encode { theme, observations, showTally, groupWidth } =
     Encode.object
-        [ "options" => Options.encode options
-        , "observations"
-            => encodeKeyedList encodeProto observations
-        , "tally" => Encode.bool tally
+        [ "theme" => Theme.encode theme
+        , "observations" => encodeObservations observations
+        , "showTally" => Encode.bool showTally
         , "groupWidth" => Encode.float groupWidth.numericValue
         ]
 
 
-encodeProto : ProtoObservation -> Encode.Value
-encodeProto (Proto optionId label) =
-    Encode.object
-        [ "optionId" => encodeMaybe Encode.string optionId
-        , "label" => Encode.string label
-        ]
+encodeObservations : List (String, Observation) -> Encode.Value
+encodeObservations observations =
+    observations
+        |> List.map (Tuple.mapSecond Observation.encode)
+        |> Encode.object
 
 
-decoder : Options.Option -> Decode.Decoder Settings
-decoder defaultOption =
-    Decode.map4 Settings
-        (Decode.field "options" Options.decoder)
-        (Decode.field "observations" <|
-            keyedListDecoder protoObsDecoder
-        )
-        (Decode.field "tally" Decode.bool)
-        (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
-
-
-protoObsDecoder : Decode.Decoder ProtoObservation
-protoObsDecoder =
-    Decode.map2 Proto
-        (Decode.field "optionId" <| Decode.nullable Decode.string)
-        (Decode.field "label" Decode.string)
+-- decoder : Topic -> Decode.Decoder Settings
+-- decoder defaultTopic =
+--     Decode.map4 Settings
+--         (Decode.field "theme" Theme.decoder)
+--         (Decode.field "showTally" Decode.bool)
+--         (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
+--         (Decode.field "observations" <| Decode.keyValuePairs Observation.decoder)

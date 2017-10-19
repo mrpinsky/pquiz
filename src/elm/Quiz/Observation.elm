@@ -1,4 +1,15 @@
-module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relabel, value, update, view)
+module Quiz.Observation
+    exposing
+        ( Observation
+        , Msg
+        , init
+        , update
+        , viewAsProto
+        , viewCreating
+        , view
+        , encode
+        , decoder
+        )
 
 import Css
 import Dict exposing (Dict)
@@ -7,101 +18,36 @@ import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Quiz.Observation.Options as Options exposing (Options)
-import Util exposing ((=>), checkmark, emdash, styles)
+import KeyedList exposing (Key)
+import Quiz.Theme as Theme exposing (Theme, Topic)
+import Util exposing ((=>), checkmark, emdash, styles, onChange, onEnter)
 
 
 -- MODEL
 
 
-type Observation
-    = Observation Options.Id Label State
+type alias Observation =
+    { style : Theme.Id
+    , label : String
+    }
 
 
-type Label
-    = Label String
+type alias Id =
+    String
 
 
-type State
-    = Struck
-    | Active Int
+type alias Style r =
+    { r
+        | symbol : String
+        , label : String
+        , color : Css.Color
+        , weight : Int
+    }
 
 
-init : Options.Id -> String -> Int -> Observation
-init optionId label tally =
-    Observation optionId (Label label) (Active tally)
-
-
-relabel : String -> Observation -> Observation
-relabel newLabel (Observation optionId label tally) =
-    Observation optionId (Label newLabel) tally
-
-
-value : Options.Options -> Observation -> Int
-value options (Observation optionId _ state) =
-    case state of
-        Struck ->
-            0
-
-        Active tally ->
-            let
-                weight =
-                    Options.lookup optionId options
-                        |> Maybe.map .weight
-                        |> Maybe.withDefault 1
-            in
-                tally * weight
-
-
-stateDecoder : Decoder State
-stateDecoder =
-    Decode.map stateFromInt Decode.int
-
-
-decoder : Decoder Observation
-decoder =
-    Decode.map3
-        Observation
-        (Decode.field "optionId" Decode.string)
-        (Decode.field "label" labelDecoder)
-        (Decode.field "state" stateDecoder)
-
-
-labelDecoder : Decoder Label
-labelDecoder =
-    Decode.map Label Decode.string
-
-
-encode : Observation -> Encode.Value
-encode (Observation optionId (Label label) state) =
-    Encode.object
-        [ "optionId" => Encode.string optionId
-        , "state" => Encode.int (stateToInt state)
-        , "label" => Encode.string label
-        ]
-
-
-encodeState : State -> Encode.Value
-encodeState state =
-    stateToInt state |> Encode.int
-
-
-stateToInt : State -> Int
-stateToInt state =
-    case state of
-        Struck ->
-            -1
-
-        Active tally ->
-            tally
-
-
-stateFromInt : Int -> State
-stateFromInt tally =
-    if tally < 0 then
-        Struck
-    else
-        Active tally
+init : Theme.Id -> Observation
+init style =
+    Observation style ""
 
 
 
@@ -109,67 +55,86 @@ stateFromInt tally =
 
 
 type Msg
-    = Relabel String
-    | Increment
-    | Strike
+    = UpdateLabel String
+    | UpdateStyle Theme.Id
 
 
 update : Msg -> Observation -> Observation
-update msg (Observation optionId label state) =
+update msg observation =
     case msg of
-        Relabel newLabel ->
-            Observation optionId (Label newLabel) state
+        UpdateLabel newLabel ->
+            { observation | label = newLabel }
 
-        Increment ->
-            case state of
-                Struck ->
-                    Observation optionId label Struck
-
-                Active tally ->
-                    tally
-                        + 1
-                        |> Active
-                        |> Observation optionId label
-
-        Strike ->
-            Observation optionId label Struck
+        UpdateStyle newStyle ->
+            { observation | style = newStyle }
 
 
 
 -- VIEW
 
 
-view : Options.Options -> Observation -> Html Msg
-view options (Observation optionId (Label label) state) =
-    let
-        option =
-            Options.lookup optionId options
+view : Observation -> Html Msg
+view observation =
+    span
+        [ contenteditable True, onInput UpdateLabel ]
+        [ Html.text observation.label ]
 
-        symbol =
-            option
-                |> Maybe.map .symbol
-                |> Maybe.withDefault checkmark
 
-        bgColor =
-            option
-                |> Maybe.map .color
-                |> Maybe.withDefault (Css.hex "ffffff")
-    in
-        case state of
-            Struck ->
-                div [ Attributes.class "struck" ]
-                    [ s [] [ Html.text label ] ]
+viewCreating : (Msg -> msg) -> msg -> Observation -> Html msg
+viewCreating updateHandler commitHandler observation =
+    input
+        [ onInput (updateHandler << UpdateLabel)
+        , onEnter commitHandler
+        , Attributes.value observation.label
+        ]
+        []
 
-            Active tally ->
-                div
-                    [ styles [ Css.backgroundColor bgColor ]
-                    ]
-                    [ button [ onClick Increment ]
-                        [ Html.text symbol
-                        , Html.text <| toString tally
-                        ]
-                    , span
-                        [ contenteditable True, onInput Relabel ]
-                        [ Html.text label ]
-                    , button [ onClick Strike ] [ Html.text emdash ]
-                    ]
+
+
+viewAsProto : Theme -> Observation -> Html Msg
+viewAsProto theme observation =
+    li []
+        [ theme
+            |> Theme.toList
+            |> List.map (viewSelectableStyle observation.style)
+            |> select [ onChange UpdateStyle ]
+        , viewToRelabel observation
+        ]
+
+
+viewToRelabel : Observation -> Html Msg
+viewToRelabel { label } =
+    input
+        [ value label
+        , onChange UpdateLabel
+        ]
+        []
+
+
+viewSelectableStyle : Theme.Id -> Topic -> Html Msg
+viewSelectableStyle currentlySelected { id, label } =
+    Html.option
+        [ selected <| currentlySelected == id
+        , value id
+        ]
+        [ Html.text label ]
+
+
+
+-- JSON
+
+
+decoder : Decoder Observation
+decoder =
+    Decode.map2
+        Observation
+        (Decode.field "style" Theme.idDecoder)
+        (Decode.field "label" Decode.string)
+
+
+encode : Observation -> Encode.Value
+encode { style, label } =
+    Encode.object
+        [ "style" => Theme.encodeId style
+        , "label" => Encode.string label
+        ]
