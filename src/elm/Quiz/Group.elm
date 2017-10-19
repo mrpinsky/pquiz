@@ -134,7 +134,7 @@ view settings (Group label observations state) =
         [ lazy viewLabel label
         , lazy2 viewTally settings observations
         , lazy2 viewInput settings state
-        , lazy2 viewObservations settings observations
+        , lazy2 viewObservations settings.options observations
         ]
 
 
@@ -208,14 +208,14 @@ viewInput settings state =
                 ]
 
 
-viewObservations : Settings -> KeyedList Observation -> Html Msg
-viewObservations settings observations =
-    KeyedList.keyedMap (viewKeyedObservation settings) observations
+viewObservations : Options.Options -> KeyedList Observation -> Html Msg
+viewObservations options observations =
+    KeyedList.keyedMap (viewKeyedObservation options) observations
         |> ul []
 
 
-viewKeyedObservation : Settings -> Key -> Observation -> Html Msg
-viewKeyedObservation settings key observation =
-    Observation.view settings observation
+viewKeyedObservation : Options.Options -> Key -> Observation -> Html Msg
+viewKeyedObservation options key observation =
+    Observation.view options observation
         |> Html.map (UpdateExisting key)
         |> viewWithRemoveButton (Delete key)

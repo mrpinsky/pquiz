@@ -1,10 +1,7 @@
 module Quiz.Observation exposing (Observation, Msg, decoder, encode, init, relabel, value, update, view)
 
--- import AllDict
-
 import Css
 import Dict exposing (Dict)
-import Quiz.Settings as Settings exposing (..)
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
@@ -142,11 +139,11 @@ update msg (Observation optionId label state) =
 -- VIEW
 
 
-view : Settings.Settings -> Observation -> Html Msg
-view settings (Observation optionId (Label label) state) =
+view : Options.Options -> Observation -> Html Msg
+view options (Observation optionId (Label label) state) =
     let
         option =
-            Options.lookup optionId settings.options
+            Options.lookup optionId options
 
         symbol =
             option
