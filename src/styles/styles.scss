@@ -42,23 +42,6 @@ button {
     padding: 3px;
   }
 
-  &.input-button {
-    &.first-kind {
-      background-color: $first-input-bg;
-      border-color: $first-input-border;
-    }
-
-    &.second-kind {
-      background-color: $second-input-bg;
-      border-color: $second-input-border;
-    }
-
-    &.third-kind {
-      background-color: $third-input-bg;
-      border-color: $third-input-border;
-    }
-  }
-
   &.remove {
     background-color: transparent;
     border-style: none;
@@ -165,16 +148,13 @@ button {
 
 .input-button {
   background-color: $white;
-  border-color: $black;
-  border-style: solid;
-  border-width: 2px;
+  border: none;
   color: $white;
   cursor: pointer;
   display: inline-block;
   font-family: sans-serif;
   font-size: 1.5em;
   font-weight: bold;
-  width: 3px / 9px * 100%;
 }
 
 .points {

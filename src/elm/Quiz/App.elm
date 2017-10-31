@@ -125,18 +125,24 @@ update msg model =
 
 
 view : Model -> Html Msg
-view { settings, groups } =
-    div []
-        [ Settings.view settings
-            |> Html.map SettingsMsg
-        , div []
-            [ menuButton (AddGroup "New Group") "Add Group"
-            , menuButton ResetGroups "Reset All Groups"
-            , menuButton Build "Build quiz"
-            ]
-        , KeyedList.keyedMap (viewKeyedGroup settings) groups
-            |> div [ style [ "display" => "flex" ] ]
-        ]
+view { state, settings, groups } =
+    case state of
+        Setup ->
+            div []
+                [ Html.map SettingsMsg <| Settings.view settings 
+                , button [ onClick Build ] [ text "Save and return" ]
+                ]
+
+        Active ->
+            div []
+                [ div []
+                    [ menuButton (AddGroup "New Group") "Add Group"
+                    , menuButton ResetGroups "Reset All Groups"
+                    , menuButton SetUp "Setup"
+                    ]
+                , KeyedList.keyedMap (viewKeyedGroup settings) groups
+                    |> div [ style [ "display" => "flex" ] ]
+                ]
 
 
 viewKeyedGroup : Settings -> Key -> Group -> Html Msg
