@@ -12,9 +12,3 @@ main =
         , update = PQuiz.update
         , view = PQuiz.view
         }
-
-
--- UPDATE
-
-
--- VIEW

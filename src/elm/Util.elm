@@ -110,3 +110,44 @@ keyedListDecoder : Decode.Decoder a -> Decode.Decoder (KeyedList a)
 keyedListDecoder decoder =
     Decode.list decoder
         |> Decode.map KeyedList.fromList
+
+
+subdivide : Int -> List a -> List (List a)
+subdivide subSize list =
+    if List.length list <= subSize then
+        List.singleton list
+    else
+        list
+            |> List.drop subSize
+            |> subdivide subSize
+            |> (::) (List.take subSize list)
+
+
+type alias Handlers childMsg parentMsg r =
+    { r
+        | onUpdate : childMsg -> parentMsg
+        , remove : parentMsg
+    }
+
+
+fade : Css.Color -> Int -> Css.Color
+fade { red, green, blue }  tally =
+    let
+        opaqueAt =
+            10
+
+        curve =
+            sqrt
+
+        alpha =
+            toFloat tally
+                |> curve
+                |> normalize (curve opaqueAt)
+
+    in
+        Css.rgba red green blue alpha
+
+
+normalize : Float -> Float -> Float
+normalize max scaled =
+    scaled / max

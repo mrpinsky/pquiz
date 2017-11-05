@@ -4,314 +4,297 @@ $gray: #adadad;
 
 $menu-border: #4e6096;
 
-$first-input-bg: #44c767;
-$first-input-border: #33944d;
-$second-input-bg: #e4dc81;
-$second-input-border: #c6b92a;
-$third-input-bg: #f24537;
-$third-input-border: #8a2a21;
-
-$color-1: hsla(115, 100%, 90%, 1);
-$color-2: hsla(55, 100%, 90%, 0);
-$color-3: hsla(0, 100%, 90%, 1);
-$colors: $color-1 $color-2 $color-3;
-
-body {
+html, body, #pquiz, .page {
+  height: 100%;
   margin: 0;
 }
 
-.menu {
-  text-align: center;
-}
-
 h2 {
-  &.hidden {
-    display: none;
-  }
+  margin: 12px 0;
 }
 
 button {
-  &.menu-button {
-    background-color: $black;
-    border: 2px solid $menu-border;
-    color: $white;
-    cursor: pointer;
-    font-size: larger;
-    font-weight: bold;
-    margin: 2.5px;
-    padding: 3px;
-  }
-
-  &.remove {
-    background-color: transparent;
-    border-style: none;
-    color: $gray;
-    cursor: pointer;
-    float: right;
-    font-family: sans-serif;
-    font-size: 1em;
-    font-weight: bold;
-    text-align: center;
-  }
+  border: 0;
 }
 
-.layout-option {
-  font-size: 28px;
-  font-weight: bold;
-  margin-left: 5px;
+.quiz {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-bottom: .25em;
 
   button {
-    background-color: transparent;
-    border-style: none;
-    cursor: pointer;
-    font-size: 24px;
-    font-weight: bold;
-  }
-
-  .counter {
-    cursor: default;
-    font-family: sans-serif;
-    font-size: 28px;
-    font-weight: bold;
-    margin-top: 3px;
-    text-align: center;
-    width: 20px;
+    margin: 2px;
+    font-size: 1em;
   }
 }
 
-.groups-list {
+.groups {
+  flex: 0 1 100%;
+}
+
+.row {
   display: flex;
-  flex-wrap: wrap;
-  overflow: auto;
+  flex-direction: row;
+  height: 50%;
 }
-
-.group-box-3 {
-  flex: none;
-  width: 33.333%;
-}
-
-.group-box-4 {
-  flex: none;
-  width: 25%;
-}
-
-.group-box-5 {
-  flex: none;
-  width: 20%;
-}
-
-.buttons {
-  display: block;
-  font-size: medium;
-  text-align: center;
-}
-
 
 .group {
+  display: flex;
+  flex-direction: column;
   border: 2px solid $black;
   border-radius: 6px;
   margin: 5px;
+  width: 100%;
+
+  .title, .points {
+    font-size: calc(1vw + 1vh + 1vmin);
+  }
 
   .title {
     cursor: text;
     font-family: sans-serif;
-    font-size: xx-large;
     font-weight: bold;
-    margin-left: .2em;
+    padding: 0 .2em .2em;
     overflow: hidden;
-    text-align: left;
+    text-align: center;
     word-wrap: break-word;
-  }
+    border-bottom: 1px solid $black;
+    background: #ddd;
+    position: relative;
 
-  .group-input {
-    height: fit-content;
-
-    .enter {
-      display: none;
+    .remove {
+      position: absolute;
+      right: 0;
+      font-size: .5em;
+      opacity: 0;
+      transition: opacity .2s ease-in-out;
     }
 
-    &.entering {
-      .enter {
-        display: block;
-        font-size: medium;
-        height: 1.7em;
-        text-align: center;
-        width: 99%;
-      }
-
-      .buttons {
-        display: none;
+    &:hover {
+      .remove {
+        opacity: 1;
       }
     }
   }
-}
 
-.input-button {
-  background-color: $white;
-  border: none;
-  color: $white;
-  cursor: pointer;
-  display: inline-block;
-  font-family: sans-serif;
-  font-size: 1.5em;
-  font-weight: bold;
-}
-
-.points {
-  cursor: default;
-  display: block;
-  font-family: sans-serif;
-  font-size: 2.5em;
-  font-weight: bold;
-  text-align: center;
-}
-
-@for $i from 1 through 10 {
-  $dec: 5% * $i;
-
-  .points {
-    &.total-#{i} {
-      background-color: hsla(0, 100%, 100%-$dec, 1);
-      margin: 0 (50% - $dec);
-
-      .pos {
-        background-color: hsla(115, 100%, 100%-$dec, 1);
-        margin: 0 (50% - $dec);
-      }
-    }
-
-    &.total-0 {
-      background-color: hsla(0, 100%, 100%, 1);
-      margin: 0 40%;
-    }
-  }
-}
-
-section {
-  height: 12em;
-  overflow: auto;
-}
-
-.observation-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.obs-counter {
-  align-self: flex-start;
-  display: flex;
-  flex: 0 0 auto;
-  float: left;
-  justify-content: flex-end;
-  margin-top: .21em;
-  width: 52px;
-
-  button {
-    &.increment {
-      background-color: transparent;
-      border-style: none;
-      cursor: pointer;
-      display: inline-block;
-      flex: 1 0 auto;
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-  }
-
-  .count {
-    cursor: default;
+  .body {
     display: flex;
-    flex: 0 0 auto;
-    font-family: sans-serif;
-    font-size: 1.2em;
-    font-weight: bold;
-    text-align: right;
-    width: 1.1em;
-  }
-}
+    flex-direction: column;
+    flex: 0 1 100%;
 
-.observation {
-  display: flex;
-  flex-direction: row;
+    .points {
+      text-align: center;
+      margin: 0;
+    }
 
-  @for $kind from 1 through 3 {
-    &.kind-#{$kind} {
-      background-color: darken(nth($colors, $kind), 35%);
-      display: flex;
-      flex-direction: row;
+    .input {
+      height: 2em;
 
-      @for $kind from 1 through 3 {
-        @for $count from 0 through 5 {
-          &.count-#{$count} {
-            background-color: darken(nth($colors, $kind), $count * 7%);
-            display: flex;
-            flex-direction: row;
-          }
+      > * {
+        height: 100%;
+      }
+
+      input {
+        font-size: 1.5em;
+        padding-left: 5px;
+        width: 100%;
+        box-sizing: border-box;
+        border-top: 1px solid $black;
+        border-left: 0;
+        border-right: 0;
+        border-bottom: 1px solid $black;
+        outline: none;
+      }
+
+      .topic {
+        border-top: 3px solid $black;
+        border-left: 1px solid $black;
+        border-right: 1px solid $black;
+        height: 100%;
+        margin-top: auto;
+
+        &:first-child {
+          border-left: 0;
+        }
+
+        &:last-child {
+          border-right: 0;
         }
       }
     }
+
+    .theme {
+      display: flex;
+    }
+
+    .observations {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      overflow-y: auto;
+
+      &.default {
+        flex: 1 0 auto;
+      }
+
+      &.local {
+        flex: 1 1 100%;
+      }
+    }
+
+    .observation {
+      display: flex;
+      padding: 5px;
+
+      .label {
+        width: 100%;
+        padding: 5px;
+        font-weight: bold;
+        font-family: sans-serif;
+        font-size: 1.2em;
+      }
+
+      .tally {
+        display: flex;
+        flex: 1 0 auto;
+        font-weight: bold;
+        font-size: 1em;
+      }
+
+      button {
+        background: transparent;
+      }
+
+      .buttons {
+        display: flex;
+        flex: 1 0 auto;
+      }
+
+      .strike {
+        margin-left: auto;
+      }
+    }
+  }
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #1c7556;
+
+  * {
+    background: $white;
   }
 
-  .description {
-    display: flex;
-    flex: 1 0 75%;
-    font-weight: bold;
-    margin-left: 5px;
-    overflow: hidden;
-    text-align: left;
+  .content {
+    height: 100%;
+    width: 500px;
+    padding: 10px;
+
+    h1 {
+      margin-top: 0;
+    }
   }
+}
 
-  .right-buttons {
+.add-button {
+  font-size: 1.5em;
+  background: #1c7556;
+  color: $white;
+  width: 1.5em;
+  border-radius: 7%;
+}
+
+.topics {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.topic.button {
+  flex: 1 1 100%;
+  font-weight: bold;
+  font-size: calc(1vw + 1vh);
+  padding: 3px;
+}
+
+.topic.editable {
+  display: block;
+  margin-bottom: 1em;
+  border: 1px solid black;
+
+  .row {
     display: flex;
-    flex: 0 0 auto;
-    flex-flow: column wrap;
+    flex-direction: row;
 
-    button {
-      background-color: transparent;
-      border-style: none;
-      color: $gray;
-      cursor: pointer;
-      display: block;
-      font-family: sans-serif;
-      font-size: .7em;
-      font-weight: bold;
-      text-align: center;
+    .remove {
+      display: flex;
+      flex-direction: column;
+      font-size: 1em;
     }
   }
 
-  .view {
+  .field {
+    display: flex;
+    flex: 1 1 auto;
+    text-transform: uppercase;
     font-family: sans-serif;
-    font-size: 1.2em;
-    line-height: 1.4em;
-    padding: 2px;
-    text-align: left;
-    word-wrap: break-word;
-  }
-}
+    font-size: .7em;
+    position: relative;
 
-.struck {
-  text-decoration: line-through;
-}
+    div {
+      display: block;
+      margin: 3px;
+      position: absolute;
+      height: 20px;
+      top: 0px;
+      font-size: 0.9em;
+    }
 
-.description {
-  &.editing {
-    .edit {
-      display: inline-block;
-      flex: 1 0 75%;
+    input {
+      width: 100%;
+      position: relative;
+      margin-top: 20px;
+      font-weight: bold;
       font-family: sans-serif;
-      font-size: 1.2em;
-      overflow: hidden;
-      text-align: left;
-    }
-
-    .view {
-      display: none;
     }
   }
 
-  .edit {
-    display: none;
+  .small-fields {
+    .field {
+      display: flex;
+      flex: 1 1 1%;
+      border-top: 1px solid gray;
+      border-right: 1px solid gray;
+      // margin: 3px;
+
+      &:last-child {
+        border-right: 0;
+      }
+
+      input {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+    }
   }
 
+  input {
+    margin: 3px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    font-family: serif;
+  }
+}
+
+.hidden {
+  display: none;
 }

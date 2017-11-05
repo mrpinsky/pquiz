@@ -3,6 +3,7 @@ module Quiz.Observation
         ( Observation
         , Msg
         , init
+        , isEmpty
         , update
         , viewAsProto
         , viewCreating
@@ -50,6 +51,11 @@ init style =
     Observation style ""
 
 
+isEmpty : Observation -> Bool
+isEmpty { label } =
+    label == ""
+
+
 
 -- UPDATE
 
@@ -76,7 +82,10 @@ update msg observation =
 view : Observation -> Html Msg
 view observation =
     span
-        [ contenteditable True, onInput UpdateLabel ]
+        [ contenteditable True
+        , onInput UpdateLabel
+        , class "label static"
+        ]
         [ Html.text observation.label ]
 
 
@@ -86,6 +95,7 @@ viewCreating updateHandler commitHandler observation =
         [ onInput (updateHandler << UpdateLabel)
         , onEnter commitHandler
         , Attributes.value observation.label
+        , class "observation creating"
         ]
         []
 
@@ -97,7 +107,7 @@ viewAsProto theme observation =
         [ theme
             |> Theme.toList
             |> List.map (viewSelectableStyle observation.style)
-            |> select [ onChange UpdateStyle ]
+            |> select [ onChange UpdateStyle, class "observation topic" ]
         , viewToRelabel observation
         ]
 
@@ -107,6 +117,7 @@ viewToRelabel { label } =
     input
         [ value label
         , onChange UpdateLabel
+        , class "observation label editable"
         ]
         []
 
@@ -116,6 +127,7 @@ viewSelectableStyle currentlySelected { id, label } =
     Html.option
         [ selected <| currentlySelected == id
         , value id
+        , class "topic"
         ]
         [ Html.text label ]
 

@@ -4,12 +4,18 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import KeyedList exposing (KeyedList, Key)
-import Json.Encode as Encode
-import Json.Decode as Decode
+-- import Json.Encode as Encode
+-- import Json.Decode as Decode
 import Quiz.Group as Group exposing (Group)
-import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Settings as Settings exposing (Settings)
-import Util exposing ((=>), encodeKeyedList, keyedListDecoder, viewWithRemoveButton)
+import Util
+    exposing
+        ( (=>)
+        , encodeKeyedList
+        , keyedListDecoder
+        , viewWithRemoveButton
+        , subdivide
+        )
 
 
 main : Program Never Model Msg
@@ -39,30 +45,19 @@ type State
 
 init : Settings -> Model
 init settings =
-    Model Active settings <| buildGroups 8 settings
+    Model Setup settings <| withGroups 8
 
 
-buildGroups : Int -> Settings -> KeyedList Group
-buildGroups count settings =
-    Settings.defaultKeys settings
-        |> withGroups count
-
-
-blankGroups : Int -> KeyedList Group
-blankGroups count =
-    withGroups count []
-
-
-withGroups : Int -> List String -> KeyedList Group
-withGroups count defaultKeys  =
+withGroups : Int -> KeyedList Group
+withGroups count =
     List.range 1 count
-        |> List.map (numberedGroup defaultKeys)
+        |> List.map numberedGroup
         |> KeyedList.fromList
 
 
-numberedGroup : List String -> Int -> Group
-numberedGroup defaultKeys n =
-    Group.init ("Group " ++ toString n) defaultKeys
+numberedGroup : Int -> Group
+numberedGroup n =
+    Group.init ("Group " ++ toString n)
 
 
 
@@ -71,8 +66,8 @@ numberedGroup defaultKeys n =
 
 type Msg
     = SettingsMsg Settings.Msg
-    | Build
     | SetUp
+    | Resume
     | AddGroup String
     | UpdateGroup Key Group.Msg
     | RemoveGroup Key
@@ -85,23 +80,16 @@ update msg model =
         SettingsMsg subMsg ->
             { model | settings = Settings.update subMsg model.settings }
 
-        Build ->
-            { model
-                | groups =
-                    buildGroups
-                        (KeyedList.length model.groups)
-                        model.settings
-                , state = Active
-            }
-
         SetUp ->
             { model | state = Setup }
+
+        Resume ->
+            { model | state = Active }
 
         AddGroup groupName ->
             let
                 newGroup =
-                    Settings.defaultKeys model.settings
-                        |> Group.init groupName
+                    Group.init groupName
             in
                 { model | groups = KeyedList.push newGroup model.groups }
 
@@ -117,7 +105,7 @@ update msg model =
             { model | groups = KeyedList.remove key model.groups }
 
         ResetGroups ->
-            { model | groups = buildGroups (KeyedList.length model.groups) model.settings }
+            { model | groups = withGroups <| KeyedList.length model.groups }
 
 
 
@@ -128,28 +116,45 @@ view : Model -> Html Msg
 view { state, settings, groups } =
     case state of
         Setup ->
-            div []
-                [ Html.map SettingsMsg <| Settings.view settings 
-                , button [ onClick Build ] [ text "Save and return" ]
+            div [ class "settings page" ]
+                [ Html.map SettingsMsg <| Settings.view settings
+                , button [ onClick Resume ] [ text "Save and return" ]
                 ]
 
         Active ->
-            div []
-                [ div []
+            div [ class "quiz page" ]
+                [ div [ class "menu-bar" ]
                     [ menuButton (AddGroup "New Group") "Add Group"
                     , menuButton ResetGroups "Reset All Groups"
                     , menuButton SetUp "Setup"
                     ]
-                , KeyedList.keyedMap (viewKeyedGroup settings) groups
-                    |> div [ style [ "display" => "flex" ] ]
+                , viewGroups settings groups
                 ]
 
 
-viewKeyedGroup : Settings -> Key -> Group -> Html Msg
-viewKeyedGroup settings key group =
-    Group.view settings group
-        |> Html.map (UpdateGroup key)
-        |> viewWithRemoveButton (RemoveGroup key)
+viewGroups : Settings -> KeyedList Group -> Html Msg
+viewGroups settings groups =
+    groups
+        |> KeyedList.keyedMap (\key item -> ( key, item ))
+        |> subdivide settings.columns
+        |> List.map (viewRow settings)
+        |> div [ class "groups" ]
+
+
+viewRow : Settings -> List (Key, Group) -> Html Msg
+viewRow settings groups =
+    List.map (viewKeyedGroup settings) groups
+        |> div [ class "row" ]
+
+
+viewKeyedGroup : Settings -> (Key, Group) -> Html Msg
+viewKeyedGroup settings (key, group) =
+    Group.view
+        { onUpdate = UpdateGroup key
+        , remove = RemoveGroup key
+        }
+        settings
+        group
 
 
 menuButton : Msg -> String -> Html Msg
@@ -168,13 +173,9 @@ styledButton className msg label =
 
 
 -- JSON
-
-
 -- encodeGroups : KeyedList Group -> Encode.Value
 -- encodeGroups groups =
 --     encodeKeyedList Group.encode groups
-
-
 -- groupsDecoder : Decode.Decoder (KeyedList Group)
 -- groupsDecoder =
 --     keyedListDecoder Group.decoder

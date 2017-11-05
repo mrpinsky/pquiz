@@ -2,7 +2,7 @@ module Quiz.Settings exposing (..)
 
 import Css exposing (Color)
 import Html exposing (..)
-import Html.Attributes exposing (value, selected)
+import Html.Attributes exposing (value, selected, class)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -29,7 +29,7 @@ import Util
 type alias Settings =
     { theme : Theme
     , showTally : Bool
-    , groupWidth : Css.Px
+    , columns : Int
     , observations : List (ObservationId, Observation)
     , nextId : Int
     }
@@ -42,11 +42,11 @@ default : Settings
 default =
     let
         theme =
-            Theme.init
+            Theme.default
     in
         { theme = theme
         , showTally = False
-        , groupWidth = Css.px 200
+        , columns = 4
         , observations = []
         , nextId = 1
         }
@@ -71,13 +71,12 @@ type Msg
     | UpdateObservation String Observation.Msg
     | RemoveObservation String
     | ToggleTally
-    | SetGroupWidth Float
+    | SetColumns Int
 
 
 update : Msg -> Settings -> Settings
 update msg settings =
     case msg of
-
         AddObservation ->
             let
                 style =
@@ -120,8 +119,8 @@ update msg settings =
         ToggleTally ->
             { settings | showTally = not settings.showTally }
 
-        SetGroupWidth px ->
-            { settings | groupWidth = Css.px px }
+        SetColumns cols ->
+            { settings | columns = cols }
 
 
 
@@ -130,23 +129,29 @@ update msg settings =
 
 view : Settings -> Html Msg
 view { theme, observations } =
-    div []
+    div [ class "content" ]
         [ h1 [] [ text "Set up your Quiz" ]
-        , h2 [] [ text "Default Observations" ]
-        , viewObservations theme observations
-        , h2 [] [ text "Observation Categories" ]
-        , Theme.viewAsEditable theme
-            |> Html.map UpdateTheme
+        , div [ class "body" ] 
+            [ section []
+                [ h2 [] [ text "Observation Categories" ]
+                , Theme.viewAsEditable theme
+                    |> Html.map UpdateTheme
+                ]
+            , section []
+                [ h2 [] [ text "Default Observations" ]
+                , viewObservations theme observations
+                ]
+            ]
         ]
 
 
 viewObservations : Theme -> List (String, Observation) -> Html Msg
 viewObservations theme observations =
-    div []
+    div [ class "default-observations" ]
         [ observations
             |> List.map (viewRemovableObservation theme) 
-            |> ul []
-        , button [ onClick AddObservation ] [ Html.text "+" ]
+            |> ul [ class "observations" ]
+        , button [ onClick AddObservation, class "add-button" ] [ Html.text "+" ]
         ]
 
 
@@ -160,21 +165,21 @@ viewRemovableObservation theme (id, observation) =
 -- JSON
 
 
-encode : Settings -> Encode.Value
-encode { theme, observations, showTally, groupWidth } =
-    Encode.object
-        [ "theme" => Theme.encode theme
-        , "observations" => encodeObservations observations
-        , "showTally" => Encode.bool showTally
-        , "groupWidth" => Encode.float groupWidth.numericValue
-        ]
+-- encode : Settings -> Encode.Value
+-- encode { theme, observations, showTally, columns } =
+--     Encode.object
+--         [ "theme" => Theme.encode theme
+--         , "observations" => encodeObservations observations
+--         , "showTally" => Encode.bool showTally
+--         , "columns" => Encode.int columns
+--         ]
 
 
-encodeObservations : List (String, Observation) -> Encode.Value
-encodeObservations observations =
-    observations
-        |> List.map (Tuple.mapSecond Observation.encode)
-        |> Encode.object
+-- encodeObservations : List (String, Observation) -> Encode.Value
+-- encodeObservations observations =
+--     observations
+--         |> List.map (Tuple.mapSecond Observation.encode)
+--         |> Encode.object
 
 
 -- decoder : Topic -> Decode.Decoder Settings

@@ -18,16 +18,6 @@ import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
 
 
-main : Program Never Group Msg
-main =
-    Html.beginnerProgram
-        { model = init "Test Group" []
-        , view = view Settings.default
-        , update = update
-        }
-
-
-
 -- MODEL
 
 
@@ -39,18 +29,9 @@ type alias Group =
     }
 
 
-init : String -> List String -> Group
-init label defaultKeys =
-    defaultKeys
-        |> List.map initDefaultRecord
-        |> Dict.fromList
-        |> Group Nothing label KeyedList.empty
-
-
-initDefaultRecord : String -> ( String, Int )
-initDefaultRecord key =
-    ( key, 0 )
-
+init : String -> Group
+init label =
+    Group Nothing label KeyedList.empty Dict.empty
 
 
 -- encode : Group -> Encode.Value
@@ -148,35 +129,40 @@ commit current existing =
             existing
 
         Just observation ->
-            KeyedList.push (Record.init observation 1) existing
+            if Observation.isEmpty observation then
+                existing
+            else
+                KeyedList.cons (Record.init observation 1) existing
 
 
 
 -- VIEW
 
 
-view : Settings -> Group -> Html Msg
-view { theme, observations, groupWidth, showTally } group =
+view : Handlers Msg msg r -> Settings -> Group -> Html msg
+view handlers { theme, observations, showTally } group =
     div
-        [ class "group"
-        , styles [ Css.width groupWidth ]
-        ]
-        [ lazy viewLabel group.label
-        , lazy3 viewTally theme showTally group.records
-        , lazy2 viewInput theme group.current
-        , lazy3 viewDefaults theme observations group.defaults
-        , lazy2 viewRecords theme group.records
+        [ class "group" ]
+        [ lazy2 viewLabel handlers group.label
+        , Html.map handlers.onUpdate <| div [ class "body" ] 
+            [ lazy3 viewTally theme showTally group.records
+            , lazy3 viewDefaults theme observations group.defaults
+            , lazy2 viewRecords theme group.records
+            , div [ class "input" ] [ lazy2 viewInput theme group.current ]
+            ]
         ]
 
 
-viewLabel : String -> Html Msg
-viewLabel label =
+viewLabel : Handlers Msg msg r -> String -> Html msg
+viewLabel { onUpdate, remove } label =
     div
         [ class "title"
         , contenteditable True
-        , onChange Relabel
+        , onChange (onUpdate << Relabel)
         ]
-        [ text label ]
+        [ text label
+        , button [ class "remove", onClick remove ] [ text "x" ]
+        ]
 
 
 viewTally : Theme -> Bool -> KeyedList Record -> Html Msg
@@ -215,7 +201,7 @@ viewInput theme current =
 viewDefaults : Theme -> List (String, Observation) -> Dict String Int -> Html Msg
 viewDefaults theme defaults tallies =
     List.map (viewDefaultObservation theme tallies) defaults
-        |> ul []
+        |> ul [ class "observations default" ]
 
 
 viewDefaultObservation : Theme -> Dict String Int -> (String, Observation) -> Html Msg
@@ -225,22 +211,27 @@ viewDefaultObservation theme tallies (id, observation) =
             Dict.get id tallies
                 |> Maybe.withDefault 0
 
-        style =
+        { color, symbol, textColor } =
             Theme.lookup observation.style theme
     in
-        li [ styles [ Css.backgroundColor style.color ] ]
-            [ button [ onClick (IncrementDefault id) ]
-                [ Html.text style.symbol
-                , Html.text <| toString tally
+        li
+            [ styles [ Css.backgroundColor <| fade color tally ]
+            , class "observation default"
+            ]
+            [ button [ onClick (IncrementDefault id), class "tally"]
+                [ Html.text <| symbol ++ toString tally ]
+            , span
+                [ class "label"
+                -- , styles [ Css.color textColor ]
                 ]
-            , Html.text observation.label
+                [ Html.text observation.label ]
             ]
 
 
 viewRecords : Theme -> KeyedList Record -> Html Msg
 viewRecords theme records =
     viewLocals theme records
-        |> ul []
+        |> ul [ class "observations local" ]
 
 
 viewLocals : Theme -> KeyedList Record -> List (Html Msg)
@@ -250,6 +241,9 @@ viewLocals theme records =
 
 viewKeyedRecord : Theme -> Key -> Record -> Html Msg
 viewKeyedRecord theme key record =
-    Record.view theme record
-        |> Html.map (UpdateRecord key)
-        |> viewWithRemoveButton (Delete key)
+    Record.view
+        { onUpdate = UpdateRecord key
+        , remove = Delete key
+        }
+        theme
+        record

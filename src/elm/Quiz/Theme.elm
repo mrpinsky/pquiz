@@ -9,6 +9,7 @@ module Quiz.Theme
         , viewAsButtons
         , defaultTopic
         , init
+        , default
         , toList
         , idList
         , lookup
@@ -27,7 +28,6 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import List.Nonempty as NE exposing (Nonempty, (:::))
 import Quiz.Observation.Style as Style exposing (Style)
-import Tagged exposing (Tagged)
 import Util
     exposing
         ( (=>)
@@ -35,6 +35,7 @@ import Util
         , colorDecoder
         , viewWithRemoveButton
         , checkmark
+        , delta
         , styles
         )
 
@@ -52,6 +53,7 @@ type alias Topic =
     , label : String
     , color : Css.Color
     , weight : Int
+    , textColor : Css.Color
     }
 
 
@@ -66,13 +68,48 @@ init =
         |> Theme 2
 
 
+default : Theme
+default =
+    defaultTopics
+        |> NE.fromList
+        |> Maybe.withDefault (NE.fromElement <| initTopic "1")
+        |> Theme 1
+
+
+defaultTopics : List Topic
+defaultTopics =
+    [ { id = "obs"
+      , symbol = "+"
+      , label = "Plus"
+      , color = Colors.green
+      , weight = 1
+      , textColor = Colors.black
+      }
+    , { id = "question"
+      , symbol = "?"
+      , label = "Question"
+      , color = Colors.yellow
+      , weight = 0
+      , textColor = Colors.black
+      }
+    , { id = "delta"
+      , symbol = delta
+      , label = "Delta"
+      , color = Colors.red
+      , weight = -1
+      , textColor = Css.hex "ffffff"
+      }
+    ]
+
+
 initTopic : String -> Topic
 initTopic id =
     { id = id
     , symbol = checkmark
-    , label = "Observation"
+    , label = "Observation Category"
     , color = Colors.green
     , weight = 1
+    , textColor = Css.hex "000000"
     }
 
 
@@ -83,6 +120,7 @@ defaultTopic =
     , label = "+"
     , color = Css.hex "ffffff"
     , weight = 0
+    , textColor = Css.hex "000000"
     }
 
 
@@ -158,8 +196,8 @@ viewAsEditable (Theme _ topics) =
         [ topics
             |> NE.toList
             |> List.map viewTopic
-            |> div []
-        , button [ onClick Add ] [ text "+" ]
+            |> ul [ class "topics" ]
+        , button [ onClick Add, class "add-button" ] [ text "+" ]
         ]
 
 
@@ -168,24 +206,23 @@ viewAsButtons toMsg (Theme _ topics) =
     topics
         |> NE.map (viewButton toMsg)
         |> NE.toList
-        |> div []
+        |> div [ class "theme buttons" ]
 
 
 viewButton : (Id -> msg) -> Topic -> Html msg
 viewButton toMsg topic =
-    button
-        [ onClick <| toMsg topic.id
-        , class "input-button"
-        , styles [ Css.backgroundColor topic.color ]
-        ]
-        [ text topic.label ]
+    Style.viewAsButton [ onClick (toMsg topic.id) ] topic
 
 
 viewTopic : Topic -> Html Msg
 viewTopic topic =
-    Style.view topic
-        |> Html.map (UpdateStyle topic.id)
-        |> viewWithRemoveButton (Remove topic.id)
+    li [ class "topic editable" ]
+        [ Style.view
+            { onUpdate = UpdateStyle topic.id
+            , remove = Remove topic.id
+            }
+            topic
+        ]
 
 
 
@@ -239,13 +276,14 @@ reconstruct topics =
 
 topicDecoder : Decode.Decoder Topic
 topicDecoder =
-    Decode.map5
+    Decode.map6
         Topic
         (Decode.field "id" idDecoder)
         (Decode.field "symbol" Decode.string)
         (Decode.field "label" Decode.string)
         (Decode.field "color" colorDecoder)
         (Decode.field "weight" Decode.int)
+        (Decode.field "textColor" colorDecoder)
 
 
 idDecoder : Decode.Decoder Id

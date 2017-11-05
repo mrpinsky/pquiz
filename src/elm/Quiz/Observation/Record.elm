@@ -1,9 +1,8 @@
-module Quiz.Observation.Record
-    exposing (Record, Msg, init, value, update, view, viewActive)
+module Quiz.Observation.Record exposing (Record, Msg, init, value, update, view, viewActive)
 
 import Css
-import Html exposing (Html, li, s, button)
-import Html.Attributes as Attributes
+import Html exposing (Html, li, s, button, div)
+import Html.Attributes as Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
@@ -12,7 +11,9 @@ import Quiz.Observation.Style as Style exposing (Style)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util exposing (..)
 
+
 -- MODEL
+
 
 type alias Record =
     { observation : Observation
@@ -46,7 +47,9 @@ value theme { observation, state } =
                 tally * weight
 
 
+
 -- UPDATE
+
 
 type Msg
     = Increment
@@ -59,7 +62,7 @@ update msg record =
     case msg of
         Increment ->
             { record | state = increment record.state }
-            
+
         Strike ->
             { record | state = Struck }
 
@@ -77,31 +80,52 @@ increment state =
             state
 
 
+
 -- VIEW
 
-view : Theme -> Record -> Html Msg
-view theme { observation, state } =
+
+view : Handlers Msg msg r -> Theme -> Record -> Html msg
+view handlers theme { observation, state } =
     case state of
         Struck ->
-            li [ Attributes.class "struck" ]
+            li [ class "observation local struck" ]
                 [ s [] [ Html.text observation.label ] ]
 
         Active tally ->
             Theme.lookup observation.style theme
-                |> viewActive observation tally
+                |> viewActive handlers observation tally
 
 
-viewActive : Observation -> Int -> Style r -> Html Msg
-viewActive observation tally style =
-    li [ styles [ Css.backgroundColor style.color ] ]
-        [ button [ onClick Increment ]
-            [ Html.text style.symbol
-            , Html.text <| toString tally
+viewActive : Handlers Msg msg q -> Observation -> Int -> Style r -> Html msg
+viewActive { onUpdate, remove } observation tally { color, symbol } =
+    li
+        [ styles [ Css.backgroundColor <| fade color tally ]
+        , class "observation local active"
+        ]
+        [ div
+            [ class "buttons start" ]
+            [ button
+                [ onClick (onUpdate Increment)
+                , class "tally"
+                ]
+                [ Html.text <| symbol ++ toString tally ]
             ]
         , Observation.view observation
             |> Html.map UpdateObservation
-        , button [ onClick Strike ] [ Html.text emdash ]
+            |> Html.map onUpdate
+        , div [ class "buttons end" ]
+            [ button
+                [ onClick (onUpdate Strike), class "strike" ]
+                [ Html.text emdash ]
+            , button
+                [ onClick remove
+                , class "remove"
+                ]
+                [ Html.text "x" ]
+            ]
         ]
+
+
 
 -- JSON
 
@@ -122,5 +146,3 @@ stateDecoder =
         [ Decode.null Struck
         , Decode.map Active Decode.int
         ]
-
-
