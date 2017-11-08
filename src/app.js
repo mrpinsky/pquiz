@@ -1,5 +1,3 @@
-'use strict';
-
 require('./index.html');
 require('./styles/styles.scss');
 

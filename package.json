@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack-dev-server --color --open",
-    "build": "webpack"
+    "build": "webpack",
+    "deploy": "npm run build && git subtree push -P dist origin gh-pages"
   },
   "repository": {
     "type": "git",
@@ -23,11 +24,13 @@
     "clean-webpack-plugin": "^0.1.17",
     "css-loader": "^0.28.7",
     "elm-webpack-loader": "^4.4.0",
+    "extract-text-webpack-plugin": "^2.1.2",
     "file-loader": "^1.1.5",
-    "node-sass": "^4.5.3",
+    "node-sass": "^4.6.0",
     "sass-loader": "^6.0.6",
     "style-loader": "^0.19.0",
     "webpack": "^2.2.0",
-    "webpack-dev-server": "^2.9.3"
+    "webpack-dev-server": "^2.9.4",
+    "webpack-merge": "^4.1.1"
   }
 }
