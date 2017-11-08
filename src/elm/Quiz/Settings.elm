@@ -30,12 +30,13 @@ type alias Settings =
     { theme : Theme
     , showTally : Bool
     , columns : Int
-    , observations : List (ObservationId, Observation)
+    , observations : List ( ObservationId, Observation )
     , nextId : Int
     }
 
 
-type alias ObservationId = String
+type alias ObservationId =
+    String
 
 
 default : Settings
@@ -47,7 +48,7 @@ default =
         { theme = theme
         , showTally = False
         , columns = 4
-        , observations = []
+        , observations = [ ( "demo", defaultProto <| Theme.idList theme ) ]
         , nextId = 1
         }
 
@@ -60,6 +61,7 @@ defaultProto theme =
 defaultKeys : Settings -> List String
 defaultKeys { observations } =
     List.map Tuple.first observations
+
 
 
 -- UPDATE
@@ -84,8 +86,8 @@ update msg settings =
                         |> NE.head
             in
                 { settings
-                    | observations = 
-                        (toString settings.nextId, Observation style "")
+                    | observations =
+                        ( toString settings.nextId, Observation style "" )
                             |> List.singleton
                             |> (++) settings.observations
                     , nextId = settings.nextId + 1
@@ -93,11 +95,11 @@ update msg settings =
 
         UpdateObservation target subMsg ->
             let
-                updateHelper (id, observation) =
+                updateHelper ( id, observation ) =
                     if id == target then
-                        (id, Observation.update subMsg observation)
+                        ( id, Observation.update subMsg observation )
                     else
-                        (id, observation)
+                        ( id, observation )
             in
                 { settings
                     | observations = List.map updateHelper settings.observations
@@ -105,8 +107,8 @@ update msg settings =
 
         RemoveObservation target ->
             let
-                removeHelper : (String, a) -> Bool
-                removeHelper (id, _) =
+                removeHelper : ( String, a ) -> Bool
+                removeHelper ( id, _ ) =
                     id /= target
             in
                 { settings | observations = List.filter removeHelper settings.observations }
@@ -131,7 +133,7 @@ view : Settings -> Html Msg
 view { theme, observations } =
     div [ class "content" ]
         [ h1 [] [ text "Set up your Quiz" ]
-        , div [ class "body" ] 
+        , div [ class "body" ]
             [ section []
                 [ h2 [] [ text "Observation Categories" ]
                 , Theme.viewAsEditable theme
@@ -145,26 +147,28 @@ view { theme, observations } =
         ]
 
 
-viewObservations : Theme -> List (String, Observation) -> Html Msg
+viewObservations : Theme -> List ( String, Observation ) -> Html Msg
 viewObservations theme observations =
     div [ class "default-observations" ]
         [ observations
-            |> List.map (viewRemovableObservation theme) 
+            |> List.map (viewRemovableObservation theme)
             |> ul [ class "observations" ]
         , button [ onClick AddObservation, class "add-button" ] [ Html.text "+" ]
         ]
 
 
-viewRemovableObservation : Theme -> (String, Observation) -> Html Msg
-viewRemovableObservation theme (id, observation) =
-    Observation.viewAsProto theme observation
-        |> Html.map (UpdateObservation id)
-        |> viewWithRemoveButton (RemoveObservation id)
+viewRemovableObservation : Theme -> ( String, Observation ) -> Html Msg
+viewRemovableObservation theme ( id, observation ) =
+    Observation.viewAsProto
+        { onUpdate = UpdateObservation id
+        , remove = RemoveObservation id
+        }
+        theme
+        observation
+
 
 
 -- JSON
-
-
 -- encode : Settings -> Encode.Value
 -- encode { theme, observations, showTally, columns } =
 --     Encode.object
@@ -173,15 +177,11 @@ viewRemovableObservation theme (id, observation) =
 --         , "showTally" => Encode.bool showTally
 --         , "columns" => Encode.int columns
 --         ]
-
-
 -- encodeObservations : List (String, Observation) -> Encode.Value
 -- encodeObservations observations =
 --     observations
 --         |> List.map (Tuple.mapSecond Observation.encode)
 --         |> Encode.object
-
-
 -- decoder : Topic -> Decode.Decoder Settings
 -- decoder defaultTopic =
 --     Decode.map4 Settings

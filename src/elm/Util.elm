@@ -3,7 +3,7 @@ module Util exposing (..)
 import Char
 import Css exposing (Color)
 import Html exposing (Html, Attribute, div, button, text)
-import Html.Attributes
+import Html.Attributes as Attributes
 import Html.Events exposing (on, keyCode, onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
@@ -96,7 +96,7 @@ viewWithRemoveButton msg html =
 
 styles : List Css.Style -> Html.Attribute msg
 styles =
-    Css.asPairs >> Html.Attributes.style
+    Css.asPairs >> Attributes.style
 
 
 encodeKeyedList : (a -> Encode.Value) -> KeyedList a -> Encode.Value
@@ -151,3 +151,11 @@ fade { red, green, blue }  tally =
 normalize : Float -> Float -> Float
 normalize max scaled =
     scaled / max
+
+
+viewField : String -> Html msg -> Html msg
+viewField label inputEl =
+    Html.label [ Attributes.class "field" ]
+        [ div [] [ Html.text label ]
+        , inputEl
+        ]

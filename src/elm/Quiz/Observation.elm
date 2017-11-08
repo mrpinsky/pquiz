@@ -21,7 +21,17 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import KeyedList exposing (Key)
 import Quiz.Theme as Theme exposing (Theme, Topic)
-import Util exposing ((=>), checkmark, emdash, styles, onChange, onEnter)
+import Util
+    exposing
+        ( (=>)
+        , checkmark
+        , emdash
+        , styles
+        , onChange
+        , onEnter
+        , Handlers
+        , viewField
+        )
 
 
 -- MODEL
@@ -100,15 +110,18 @@ viewCreating updateHandler commitHandler observation =
         []
 
 
-
-viewAsProto : Theme -> Observation -> Html Msg
-viewAsProto theme observation =
-    li []
+viewAsProto : Handlers Msg msg r -> Theme -> Observation -> Html msg
+viewAsProto { onUpdate, remove } theme observation =
+    li [ class "observation" ]
         [ theme
             |> Theme.toList
             |> List.map (viewSelectableStyle observation.style)
-            |> select [ onChange UpdateStyle, class "observation topic" ]
+            |> select [ onChange UpdateStyle, class "topic" ]
+            |> viewField "Category"
+            |> Html.map onUpdate
         , viewToRelabel observation
+            |> Html.map onUpdate
+        , button [ class "remove", onClick remove ] [ text "x" ]
         ]
 
 
@@ -117,9 +130,10 @@ viewToRelabel { label } =
     input
         [ value label
         , onChange UpdateLabel
-        , class "observation label editable"
+        , class "label editable"
         ]
         []
+        |> viewField "Description"
 
 
 viewSelectableStyle : Theme.Id -> Topic -> Html Msg

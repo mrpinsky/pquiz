@@ -15,7 +15,17 @@ import Html.Events exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Tagged exposing (Tagged)
-import Util exposing ((=>), onChange, delta, encodeColor, colorDecoder, Handlers, styles)
+import Util
+    exposing
+        ( (=>)
+        , onChange
+        , delta
+        , encodeColor
+        , colorDecoder
+        , Handlers
+        , styles
+        , viewField
+        )
 
 
 type alias Style r =
@@ -60,43 +70,46 @@ update msg style =
 
 
 view : Handlers Msg msg p -> Style r -> Html msg
-view {onUpdate, remove } style =
+view { onUpdate, remove } style =
     div []
         [ div [ class "row" ]
-            [ viewField "Label"
+            [ input
                 [ onChange UpdateLabel
                 , value style.label
                 , class "label"
                 ]
+                []
+                |> viewField "Label"
                 |> Html.map onUpdate
             , button [ onClick remove, class "remove" ] [ text "x" ]
             ]
-        , Html.map onUpdate <| div [ class "row small-fields" ]
-            [ viewField "Symbol"
-                [ onChange UpdateSymbol
-                , maxlength 1
-                , value style.symbol
-                , class "symbol"
+        , Html.map onUpdate <|
+            div [ class "row small-fields" ]
+                [ input
+                    [ onChange UpdateSymbol
+                    , maxlength 1
+                    , value style.symbol
+                    , class "symbol"
+                    ]
+                    []
+                    |> viewField "Symbol"
+                , input
+                    [ onInput (UpdateColor << Css.hex)
+                    , type_ "color"
+                    , value style.color.value
+                    , class "background"
+                    ]
+                    []
+                    |> viewField "Background"
+                , input
+                    [ onChange (UpdateWeight << parseWeight style.weight)
+                    , type_ "number"
+                    , value <| toString style.weight
+                    , class "weight"
+                    ]
+                    []
+                    |> viewField "Weight"
                 ]
-            , viewField "Background"
-                [ onInput (UpdateColor << Css.hex)
-                , type_ "color"
-                , value style.color.value
-                , class "background"
-                ]
-            -- , viewField "Text Color"
-            --     [ type_ "color"
-            --     , class "color"
-            --     , onInput (UpdateTextColor << Css.hex)
-            --     , value style.textColor.value
-            --     ]
-            , viewField "Weight"
-                [ onChange (UpdateWeight << parseWeight style.weight)
-                , type_ "number"
-                , value <| toString style.weight
-                , class "weight"
-                ]
-            ]
         ]
 
 
@@ -110,14 +123,6 @@ viewAsButton attrs { color, label } =
                 ++ attrs
     in
         button attributes [ text label ]
-
-
-viewField : String -> List (Attribute Msg) -> Html Msg
-viewField label attributes =
-    Html.label [ class "field" ]
-        [ div [] [ text label ]
-        , input attributes []
-        ]
 
 
 
