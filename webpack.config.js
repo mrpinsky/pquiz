@@ -1,8 +1,9 @@
 var path = require("path");
 var webpack = require("webpack");
 var merge = require('webpack-merge');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const prod = 'production';
 const dev = 'development';
@@ -12,54 +13,46 @@ const TARGET_ENV = process.env.npm_lifecycle_event === 'build' ? prod : dev;
 const isDev = TARGET_ENV == dev;
 const isProd = TARGET_ENV == prod;
 
+const entryPath = "./src/app.js"
+
 console.log("WEBPACK STARTED")
 console.log("Building for", TARGET_ENV)
 
 var commonConfig = {
-  entry: {
-    app: './src/app.js',
-  },
-  module: {
-    rules: [
-      {
-        test: /\.html$/,
-        exclude: /node_modules/,
-        loader: 'file-loader?name=[name].[ext]',
-      },
-      {
-        test: /\.elm$/,
-        exclude: [/elm-stuff/, /node_modules/],
-        loader: 'elm-webpack-loader?verbose=true&warn=true',
-      }
-    ],
-    noParse: /\.elm$/,
-  },
-  plugins: [
-    new CleanWebpackPlugin(['dist']),
-  ],
-  devServer: {
-    contentBase: './dist',
-  },
   output: {
     path: path.resolve(__dirname, './dist'),
     filename: '[name].bundle.js',
   },
+  module: {
+    noParse: /\.elm$/,
+  },
+  plugins: [
+    new CleanWebpackPlugin(['dist']),
+    new HtmlWebpackPlugin({
+      template: 'src/index.html',
+      inject: 'body',
+      filename: 'index.html',
+    })
+  ],
 };
 
 if (isDev) {
   module.exports = merge(commonConfig, {
+    entry: [
+      'webpack-dev-server/client?http://localhost:8080',
+      entryPath
+    ],
+    devServer: {
+      contentBase: './src/',
+    },
     module: {
       rules: [{
         test: /\.elm$/,
         exclude: [/elm-suff/, /node_modules/],
-        use: [{
-          loader: 'elm-webpack-loader',
-          options: {
-            verbose: true,
-            warn: true,
-            debug: true
-          }
-        }]
+        loader: 'elm-webpack-loader',
+        options: {
+          debug: true
+        }
       },{
         test: /\.sc?ss$/,
         use: ['style-loader', 'css-loader', 'sass-loader']
@@ -70,6 +63,7 @@ if (isDev) {
 
 if (isProd) {
   module.exports = merge(commonConfig, {
+    entry: entryPath,
     module: {
       rules: [{
         test: /\.elm$/,

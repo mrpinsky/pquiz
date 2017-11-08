@@ -1,4 +1,3 @@
-require('./index.html');
 require('./styles/styles.scss');
 
 var Elm = require('./elm/App.elm')
