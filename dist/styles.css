@@ -1,3 +1,6 @@
+* {
+  font-family: Roboto; }
+
 html, body, #pquiz, .page {
   height: 100%;
   margin: 0; }
@@ -6,7 +9,8 @@ h2 {
   margin: 12px 0; }
 
 button {
-  border: 0; }
+  border: 0;
+  cursor: pointer; }
 
 .hidden {
   display: none; }
@@ -27,10 +31,9 @@ button {
 .remove {
   display: flex;
   flex-direction: column;
-  font-size: .9em;
   position: absolute;
   right: 0;
-  background: transparent !important; }
+  top: 0; }
 
 .groups {
   flex: 0 1 100%; }
@@ -61,8 +64,6 @@ button {
     background: #ddd;
     position: relative; }
     .group .title .remove {
-      position: absolute;
-      right: 0;
       font-size: .5em;
       opacity: 0;
       transition: opacity .2s ease-in-out; }
@@ -71,12 +72,16 @@ button {
   .group .body {
     display: flex;
     flex-direction: column;
-    flex: 0 1 100%; }
+    flex: 0 1 100%;
+    overflow-y: hidden; }
     .group .body .points {
       text-align: center;
       margin: 0; }
     .group .body .input {
-      height: 2em; }
+      margin-top: auto;
+      background: #eee;
+      max-height: 0;
+      transition: max-height .2s ease-in-out; }
       .group .body .input > * {
         height: 100%; }
       .group .body .input input {
@@ -89,16 +94,9 @@ button {
         border-right: 0;
         border-bottom: 1px solid #000;
         outline: none; }
-      .group .body .input .topic {
-        border-top: 3px solid #000;
-        border-left: 1px solid #000;
-        border-right: 1px solid #000;
-        height: 100%;
-        margin-top: auto; }
-        .group .body .input .topic:first-child {
-          border-left: 0; }
-        .group .body .input .topic:last-child {
-          border-right: 0; }
+    .group .body:hover .input {
+      max-height: 10em;
+      transition: max-height .2s ease-in-out; }
     .group .body .theme {
       display: flex; }
     .group .body .observations {
@@ -128,7 +126,12 @@ button {
         background: transparent; }
       .group .body .observation .buttons {
         display: flex;
-        flex: 1 0 auto; }
+        flex: 1 0 auto;
+        align-items: center; }
+        .group .body .observation .buttons .remove {
+          display: block;
+          font-size: 1em;
+          position: static; }
       .group .body .observation .strike {
         margin-left: auto; }
 
@@ -151,6 +154,19 @@ button {
     font-size: 1rem; }
     .settings .observation .label {
       flex: 0 1 100%; }
+  .settings .submit {
+    margin-top: 1em;
+    width: 100%;
+    text-align: center;
+    padding: .15em; }
+  .settings .add-button {
+    width: 1.5em;
+    font-weight: bold; }
+  .settings button {
+    font-size: 1.5em;
+    background: #1c7556;
+    color: #fff;
+    border-radius: 2px; }
   .settings ul {
     list-style: none;
     padding: 0;
@@ -162,19 +178,18 @@ button {
     position: relative; }
     .settings li:last-child {
       border: none; }
-
-.add-button {
-  font-size: 1.5em;
-  background: #1c7556;
-  color: #fff;
-  width: 1.5em;
-  border-radius: 7%; }
+    .settings li .remove {
+      font-size: .9em;
+      color: #000;
+      background: transparent; }
 
 .topic.button {
   flex: 1 1 100%;
   font-weight: bold;
   font-size: calc(1vw + 1vh);
-  padding: 3px; }
+  padding: 3px 3px 0;
+  margin: 5px;
+  border-radius: 2px; }
 
 .topic.editable {
   display: block; }
