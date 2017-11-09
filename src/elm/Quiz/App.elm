@@ -45,7 +45,7 @@ type State
 
 init : Settings -> Model
 init settings =
-    Model Setup settings <| withGroups 8
+    Model Active settings <| withGroups 8
 
 
 withGroups : Int -> KeyedList Group
@@ -117,8 +117,9 @@ view { state, settings, groups } =
     case state of
         Setup ->
             div [ class "settings page" ]
-                [ Html.map SettingsMsg <| Settings.view settings
-                , button [ onClick Resume ] [ text "Save and return" ]
+                [ Settings.view
+                    { updateMsg = SettingsMsg, doneMsg = Resume }
+                    settings
                 ]
 
         Active ->

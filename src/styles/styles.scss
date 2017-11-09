@@ -4,6 +4,10 @@ $gray: #adadad;
 
 $menu-border: #4e6096;
 
+* {
+  font-family: Roboto;
+}
+
 html, body, #pquiz, .page {
   height: 100%;
   margin: 0;
@@ -15,6 +19,7 @@ h2 {
 
 button {
   border: 0;
+  cursor: pointer;
 }
 
 .hidden {
@@ -41,10 +46,9 @@ button {
 .remove {
   display: flex;
   flex-direction: column;
-  font-size: .9em;
   position: absolute;
   right: 0;
-  background: transparent !important;
+  top: 0;
 }
 
 .groups {
@@ -82,8 +86,6 @@ button {
     position: relative;
 
     .remove {
-      position: absolute;
-      right: 0;
       font-size: .5em;
       opacity: 0;
       transition: opacity .2s ease-in-out;
@@ -100,6 +102,7 @@ button {
     display: flex;
     flex-direction: column;
     flex: 0 1 100%;
+    overflow-y: hidden;
 
     .points {
       text-align: center;
@@ -107,7 +110,10 @@ button {
     }
 
     .input {
-      height: 2em;
+      margin-top: auto;
+      background: #eee;
+      max-height: 0;
+      transition: max-height .2s ease-in-out;
 
       > * {
         height: 100%;
@@ -124,21 +130,12 @@ button {
         border-bottom: 1px solid $black;
         outline: none;
       }
+    }
 
-      .topic {
-        border-top: 3px solid $black;
-        border-left: 1px solid $black;
-        border-right: 1px solid $black;
-        height: 100%;
-        margin-top: auto;
-
-        &:first-child {
-          border-left: 0;
-        }
-
-        &:last-child {
-          border-right: 0;
-        }
+    &:hover {
+      .input {
+        max-height: 10em;
+        transition: max-height .2s ease-in-out;
       }
     }
 
@@ -187,6 +184,13 @@ button {
       .buttons {
         display: flex;
         flex: 1 0 auto;
+        align-items: center;
+
+        .remove {
+          display: block;
+          font-size: 1em;
+          position: static;
+        }
       }
 
       .strike {
@@ -226,6 +230,25 @@ button {
     }
   }
 
+  .submit {
+    margin-top: 1em;
+    width: 100%;
+    text-align: center;
+    padding: .15em;
+  }
+
+  .add-button {
+    width: 1.5em;
+    font-weight: bold;
+  }
+
+  button {
+    font-size: 1.5em;
+    background: #1c7556;
+    color: $white;
+    border-radius: 2px;
+  }
+
   ul {
     list-style: none;
     padding: 0;
@@ -241,15 +264,13 @@ button {
     &:last-child {
       border: none;
     }
-  }
-}
 
-.add-button {
-  font-size: 1.5em;
-  background: #1c7556;
-  color: $white;
-  width: 1.5em;
-  border-radius: 7%;
+    .remove{
+      font-size: .9em;
+      color: $black;
+      background: transparent;
+    }
+  }
 }
 
 .topic {
@@ -257,7 +278,9 @@ button {
     flex: 1 1 100%;
     font-weight: bold;
     font-size: calc(1vw + 1vh);
-    padding: 3px;
+    padding: 3px 3px 0;
+    margin: 5px;
+    border-radius: 2px;
   }
 
   &.editable {

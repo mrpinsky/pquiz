@@ -48,7 +48,7 @@ default =
         { theme = theme
         , showTally = False
         , columns = 4
-        , observations = [ ( "demo", defaultProto <| Theme.idList theme ) ]
+        , observations = [] -- [ ( "demo", defaultProto <| Theme.idList theme ) ]
         , nextId = 1
         }
 
@@ -129,8 +129,8 @@ update msg settings =
 -- VIEW
 
 
-view : Settings -> Html Msg
-view { theme, observations } =
+view : { updateMsg : Msg -> msg, doneMsg : msg } -> Settings -> Html msg
+view { updateMsg, doneMsg } { theme, observations } =
     div [ class "content" ]
         [ h1 [] [ text "Set up your Quiz" ]
         , div [ class "body" ]
@@ -138,11 +138,15 @@ view { theme, observations } =
                 [ h2 [] [ text "Observation Categories" ]
                 , Theme.viewAsEditable theme
                     |> Html.map UpdateTheme
+                    |> Html.map updateMsg
                 ]
             , section []
                 [ h2 [] [ text "Default Observations" ]
                 , viewObservations theme observations
+                    |> Html.map updateMsg
                 ]
+            , button [ class "submit", onClick doneMsg ]
+                [ text "Save and return" ]
             ]
         ]
 
