@@ -1,7 +1,7 @@
-module Quiz.Observation.Record exposing (Record, Msg, init, value, update, view, viewActive)
+module Quiz.Observation.Record exposing (Record, Msg, init, value, update, view)
 
 import Css
-import Html exposing (Html, li, s, button, div)
+import Html exposing (Html, li, s, button, div, text)
 import Html.Attributes as Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
@@ -26,8 +26,8 @@ type State
     | Active Int
 
 
-init : Observation -> Int -> Record
-init observation tally =
+init : Int -> Observation -> Record
+init tally observation =
     Record observation <| Active tally
 
 
@@ -85,45 +85,54 @@ increment state =
 
 
 view : Handlers Msg msg r -> Theme -> Record -> Html msg
-view handlers theme { observation, state } =
-    case state of
-        Struck ->
-            li [ class "observation local struck" ]
-                [ s [] [ Html.text observation.label ] ]
-
-        Active tally ->
+view { onUpdate, remove } theme { observation, state } =
+    let
+        { color, symbol } =
             Theme.lookup observation.style theme
-                |> viewActive handlers observation tally
 
+        ( bgColor, stateClass, tallyText, label ) =
+            case state of
+                Struck ->
+                    ( Css.hex "eeeeee"
+                    , "struck"
+                    , "0"
+                    , s [ class "label" ] [ text observation.label ]
+                    )
 
-viewActive : Handlers Msg msg q -> Observation -> Int -> Style r -> Html msg
-viewActive { onUpdate, remove } observation tally { color, symbol } =
-    li
-        [ styles [ Css.backgroundColor <| fade color tally ]
-        , class "observation local active"
-        ]
-        [ div
-            [ class "buttons start" ]
-            [ button
-                [ onClick (onUpdate Increment)
-                , class "tally"
-                ]
-                [ Html.text <| symbol ++ toString tally ]
+                Active tally ->
+                    ( fade color tally
+                    , "active"
+                    , toString tally
+                    , Observation.view observation
+                        |> Html.map UpdateObservation
+                        |> Html.map onUpdate
+                    )
+    in
+        li
+            [ styles [ Css.backgroundColor <| bgColor ]
+            , class "observation local"
+            , class stateClass
             ]
-        , Observation.view observation
-            |> Html.map UpdateObservation
-            |> Html.map onUpdate
-        , div [ class "buttons end" ]
-            [ button
-                [ onClick (onUpdate Strike), class "strike" ]
-                [ Html.text emdash ]
-            , button
-                [ onClick remove
-                , class "remove"
+            [ div
+                [ class "buttons start" ]
+                [ button
+                    [ onClick (onUpdate Increment)
+                    , class "tally"
+                    ]
+                    [ Html.text <| symbol ++ tallyText ]
                 ]
-                [ Html.text "x" ]
+            , label
+            , div [ class "buttons end" ]
+                [ button
+                    [ onClick (onUpdate Strike), class "strike" ]
+                    [ Html.text emdash ]
+                , button
+                    [ onClick remove
+                    , class "remove"
+                    ]
+                    [ Html.text "x" ]
+                ]
             ]
-        ]
 
 
 

@@ -22,7 +22,7 @@ import Util exposing (..)
 
 
 type alias Group =
-    { current : Maybe Observation
+    { current : Maybe Theme.Id
     , label : String
     , records : KeyedList Record
     , defaults : Dict String Int
@@ -70,8 +70,8 @@ init label =
 
 type Msg
     = StartNew Theme.Id
-    | UpdateCurrent Observation.Msg
-    | Commit
+    | CommitCurrent Theme.Id String
+    | CancelCurrent
     | IncrementDefault String
     | UpdateRecord Key Record.Msg
     | Delete Key
@@ -82,19 +82,16 @@ update : Msg -> Group -> Group
 update msg group =
     case msg of
         StartNew topicId ->
-            { group | current = Just <| Observation.init topicId }
+            { group | current = Just topicId }
 
-        UpdateCurrent subMsg ->
-            { group
-                | current =
-                    Maybe.map (Observation.update subMsg) group.current
-            }
-
-        Commit ->
+        CommitCurrent style label ->
             { group
                 | current = Nothing
-                , records = commit group.current group.records
+                , records = commit group.records style label
             }
+
+        CancelCurrent ->
+            { group | current = Nothing }
 
         IncrementDefault defaultId ->
             { group | defaults = Dict.update defaultId incrementDefault group.defaults }
@@ -122,19 +119,16 @@ incrementDefault tally =
         |> Just
 
 
-commit : Maybe Observation -> KeyedList Record -> KeyedList Record
-commit current existing =
-    case current of
-        Nothing ->
-            existing
-
-        Just observation ->
-            if Observation.isEmpty observation then
-                existing
-            else
-                KeyedList.cons (Record.init observation 1) existing
-
-
+commit : KeyedList Record -> Theme.Id -> String -> KeyedList Record
+commit existing style label =
+    if String.isEmpty label then
+        existing
+    else
+        let
+            new =
+                Record.init 1 <| Observation style label
+        in
+            KeyedList.cons new existing
 
 -- VIEW
 
@@ -148,7 +142,7 @@ view handlers { theme, observations, showTally } group =
             [ lazy3 viewTally theme showTally group.records
             , lazy3 viewDefaults theme observations group.defaults
             , lazy2 viewRecords theme group.records
-            , div [ class "input" ] [ lazy2 viewInput theme group.current ]
+            , lazy2 viewDrawer theme group.current
             ]
         ]
 
@@ -187,15 +181,41 @@ viewTally theme showTally records =
                 ]
 
 
-viewInput : Theme -> Maybe Observation -> Html Msg
-viewInput theme current =
-    case current of
-        Nothing ->
-            Theme.viewAsButtons StartNew theme
+viewDrawer : Theme -> Maybe Theme.Id -> Html Msg
+viewDrawer theme current =
+    let
+        bgColor =
+            case current of
+                Just id ->
+                    Theme.lookup id theme
+                        |> .color
+                        |> faded 
 
-        Just observation ->
-            Observation.viewCreating UpdateCurrent Commit observation
-              
+                Nothing ->
+                    Css.hex "dddddd"
+    in
+        div [ class "drawer"
+            , classList [ ("entering", current /= Nothing) ]
+            , styles [ Css.backgroundColor bgColor ]
+            ] 
+            [ Theme.viewAsButtons StartNew current theme
+            , viewCurrent theme current
+            , button
+                [ class "cancel"
+                , onClick CancelCurrent
+                ]
+                [ text "x" ]
+            ]
+
+
+viewCurrent : Theme -> Maybe Theme.Id -> Html Msg
+viewCurrent theme current =
+    input
+        [ onEnter <| CommitCurrent (Maybe.withDefault "default" current)
+        , class "observation creating"
+        , value ""
+        ]
+        []
 
 
 viewDefaults : Theme -> List (String, Observation) -> Dict String Int -> Html Msg

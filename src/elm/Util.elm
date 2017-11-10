@@ -65,12 +65,13 @@ checkmark =
     stringFromCode 10004
 
 
-onEnter : msg -> Attribute msg
-onEnter msg =
+onEnter : (String -> msg) -> Attribute msg
+onEnter toMsg =
     let
         isEnter code =
             if code == 13 then
-                Decode.succeed msg
+                Decode.at [ "target", "value" ] Decode.string
+                    |> Decode.map toMsg
             else
                 Decode.fail "not ENTER"
     in
@@ -146,6 +147,11 @@ fade { red, green, blue }  tally =
 
     in
         Css.rgba red green blue alpha
+
+
+faded : Css.Color -> Css.Color
+faded color =
+    fade color 1
 
 
 normalize : Float -> Float -> Float

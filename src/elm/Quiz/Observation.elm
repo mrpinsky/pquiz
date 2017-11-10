@@ -3,10 +3,8 @@ module Quiz.Observation
         ( Observation
         , Msg
         , init
-        , isEmpty
         , update
         , viewAsProto
-        , viewCreating
         , view
         , encode
         , decoder
@@ -61,12 +59,6 @@ init style =
     Observation style ""
 
 
-isEmpty : Observation -> Bool
-isEmpty { label } =
-    label == ""
-
-
-
 -- UPDATE
 
 
@@ -97,17 +89,6 @@ view observation =
         , class "label static"
         ]
         [ Html.text observation.label ]
-
-
-viewCreating : (Msg -> msg) -> msg -> Observation -> Html msg
-viewCreating updateHandler commitHandler observation =
-    input
-        [ onInput (updateHandler << UpdateLabel)
-        , onEnter commitHandler
-        , Attributes.value observation.label
-        , class "observation creating"
-        ]
-        []
 
 
 viewAsProto : Handlers Msg msg r -> Theme -> Observation -> Html msg
