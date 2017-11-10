@@ -46,6 +46,7 @@ button {
 .group {
   display: flex;
   flex-direction: column;
+  flex: 1;
   border: 2px solid #000;
   border-radius: 6px;
   margin: 5px;
@@ -77,26 +78,44 @@ button {
     .group .body .points {
       text-align: center;
       margin: 0; }
-    .group .body .input {
+    .group .body .drawer {
       margin-top: auto;
-      background: #eee;
       max-height: 0;
-      transition: max-height .2s ease-in-out; }
-      .group .body .input > * {
-        height: 100%; }
-      .group .body .input input {
-        font-size: 1.5em;
-        padding-left: 5px;
-        width: 100%;
-        box-sizing: border-box;
-        border-top: 1px solid #000;
-        border-left: 0;
-        border-right: 0;
-        border-bottom: 1px solid #000;
-        outline: none; }
-    .group .body:hover .input {
-      max-height: 10em;
-      transition: max-height .2s ease-in-out; }
+      transition: max-height .3s ease-in-out;
+      display: flex;
+      flex: 0 1 100%; }
+      .group .body .drawer .theme {
+        flex: 0 1 100%; }
+      .group .body .drawer .input-container {
+        display: none; }
+      .group .body .drawer .observation,
+      .group .body .drawer input[type=text] {
+        display: none; }
+      .group .body .drawer .cancel {
+        display: none; }
+      .group .body .drawer.entering .theme {
+        flex: 0; }
+      .group .body .drawer.entering .topic {
+        flex: 1;
+        background: transparent;
+        font-size: .75em; }
+      .group .body .drawer.entering .inactive {
+        display: none; }
+      .group .body .drawer.entering .input-container {
+        flex: 1; }
+      .group .body .drawer.entering .observation,
+      .group .body .drawer.entering input[type=text] {
+        display: flex;
+        flex: 1;
+        border: 0;
+        outline: 0;
+        background: transparent; }
+      .group .body .drawer.entering .cancel {
+        display: initial;
+        background: transparent; }
+    .group .body:hover .drawer {
+      max-height: 2.4rem;
+      transition: max-height .3s ease-in-out; }
     .group .body .theme {
       display: flex; }
     .group .body .observations {
@@ -134,6 +153,12 @@ button {
           position: static; }
       .group .body .observation .strike {
         margin-left: auto; }
+      .group .body .observation.struck .start {
+        visibility: hidden; }
+      .group .body .observation.struck .label {
+        font-weight: normal; }
+      .group .body .observation.struck .strike {
+        display: none; }
 
 .settings {
   display: flex;
@@ -186,7 +211,7 @@ button {
 .topic.button {
   flex: 1 1 100%;
   font-weight: bold;
-  font-size: calc(1vw + 1vh);
+  font-size: 1.3rem;
   padding: 3px 3px 0;
   margin: 5px;
   border-radius: 2px; }
