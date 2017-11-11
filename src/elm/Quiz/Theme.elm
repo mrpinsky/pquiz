@@ -81,21 +81,21 @@ defaultTopics =
     [ { id = "obs"
       , symbol = "+"
       , label = "Plus"
-      , color = Colors.green
+      , color = Css.hex "5BD863"
       , weight = 1
       , textColor = Colors.black
       }
     , { id = "question"
       , symbol = "?"
       , label = "Question"
-      , color = Colors.yellow
+      , color = Css.hex "FCFC6C"
       , weight = 0
       , textColor = Colors.black
       }
     , { id = "delta"
       , symbol = delta
       , label = "Delta"
-      , color = Colors.red
+      , color = Css.hex "DB6F6F"
       , weight = -1
       , textColor = Css.hex "ffffff"
       }
@@ -192,12 +192,23 @@ update msg (Theme nextId topics) =
 
 viewAsEditable : Theme -> Html Msg
 viewAsEditable (Theme _ topics) =
-    div []
-        [ topics
+    section []
+        [ h2 []
+            [ text "Observation Categories"
+            , button [ onClick Add, class "add-button" ] [ text "+" ]
+            ]
+        , p [ class "hint" ]
+            [ text
+                """
+                Classifications for your observations. Can be
+                generic, like Plus, Question, and Delta, or focused on a
+                particular norm, like Communication.
+                """
+            ]
+        , topics
             |> NE.toList
             |> List.map viewTopic
             |> ul [ class "topics" ]
-        , button [ onClick Add, class "add-button" ] [ text "+" ]
         ]
 
 
@@ -211,11 +222,13 @@ viewAsButtons toMsg current (Theme _ topics) =
 
 viewButton : (Id -> msg) -> Maybe Id -> Topic -> Html msg
 viewButton toMsg current topic =
-    Style.viewAsButton
-        [ onClick (toMsg topic.id)
-        , classList [ ( "inactive", current /= Just topic.id ) ]
+    div [ class "topic-container" ]
+        [ Style.viewAsButton
+            [ onClick (toMsg topic.id)
+            , classList [ ( "inactive", current /= Just topic.id ) ]
+            ]
+            topic
         ]
-        topic
 
 
 viewTopic : Topic -> Html Msg

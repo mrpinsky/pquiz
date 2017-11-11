@@ -1,7 +1,7 @@
 port module Quiz.App exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, style)
+import Html.Attributes exposing (class, style, href)
 import Html.Events exposing (onClick)
 import Quiz.Group as Group exposing (Group)
 import Quiz.Settings as Settings exposing (Settings)
@@ -154,9 +154,11 @@ view { state, settings, groups } =
             div [ class "quiz page" ]
                 [ viewGroups settings groups
                 , div [ class "menu-bar" ]
-                    [ menuButton (AddGroup "New Group") "+ Add Group"
+                    [ menuButton SetUp "Settings"
+                    , menuButton (AddGroup "New Group") "+ Add Group"
                     , menuButton ResetGroups "Reset All Groups"
-                    , menuButton SetUp "Settings"
+                    , a [ href "mailto:pquiz.feedback@gmail.com" ]
+                        [ text "Send Feedback" ]
                     ]
                 ]
 

@@ -3,12 +3,14 @@
 
 html, body, #pquiz, .page {
   height: 100%;
-  margin: 0; }
+  margin: 0;
+  background: #B7B7B7; }
 
 h2 {
-  margin: 12px 0; }
+  margin: 40px 0 12px; }
 
-button {
+button,
+a {
   border: 0;
   cursor: pointer; }
 
@@ -24,9 +26,14 @@ button {
   flex-direction: row;
   justify-content: center;
   margin-bottom: .25em; }
-  .menu-bar button {
+  .menu-bar button,
+  .menu-bar a {
     margin: 2px;
-    font-size: 1em; }
+    font-size: 1em;
+    background: #ddd;
+    color: #333;
+    padding: 1px 6px;
+    text-decoration: none; }
 
 .remove {
   display: flex;
@@ -49,24 +56,29 @@ button {
   display: flex;
   flex-direction: column;
   flex: 1;
-  border: 2px solid #000;
   margin: 5px;
   width: 100%; }
-  .group .title, .group .points {
+  .group .title input, .group .points {
     font-size: calc(1vw + 1vh + 1vmin); }
   .group .title {
-    cursor: text;
-    font-family: sans-serif;
-    font-weight: bold;
-    padding: 0 .2em .2em;
-    overflow: hidden;
-    text-align: center;
-    word-wrap: break-word;
-    border-bottom: 1px solid #000;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    padding: .2em .2em .4em;
+    align-items: center;
     background: #ddd;
     position: relative; }
+    .group .title input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-family: sans-serif;
+      font-weight: bold;
+      width: 100%;
+      text-align: center; }
     .group .title .remove {
-      font-size: .5em;
+      font-size: 1em;
       opacity: 0;
       transition: opacity .2s ease-in-out; }
     .group .title:hover .remove {
@@ -76,7 +88,8 @@ button {
     flex-direction: column;
     flex: 0 1 100%;
     overflow-y: hidden;
-    position: relative; }
+    position: relative;
+    background: #fff; }
     .group .body .points {
       text-align: center;
       margin: 0; }
@@ -84,19 +97,26 @@ button {
       margin-top: auto;
       display: flex;
       position: absolute;
-      bottom: -55px;
+      bottom: -45px;
       width: 100%;
+      background: transparent;
       transition: bottom .3s ease-in-out; }
       .group .body .drawer .theme {
-        flex: 0 1 100%; }
-      .group .body .drawer .topic {
-        margin-left: 5px;
-        margin-bottom: 5px; }
-        .group .body .drawer .topic:last-child {
+        display: flex;
+        flex: 0 1 100%;
+        background: transparent;
+        transition: background-color .3s ease-in-out; }
+      .group .body .drawer .topic-container {
+        margin: 5px 0 5px 5px;
+        border-radius: 2px;
+        background: #fff;
+        flex: 1; }
+        .group .body .drawer .topic-container:last-child {
           margin-right: 5px; }
       .group .body .drawer .input-container {
         display: flex;
-        flex: 1; }
+        flex: 1;
+        background: #fff; }
       .group .body .drawer .symbol {
         display: flex;
         align-items: center;
@@ -121,12 +141,12 @@ button {
         color: #888;
         background: transparent; }
       .group .body .drawer.open {
-        bottom: 0; }
+        bottom: 0;
+        background: #fff; }
     .group .body:hover .drawer {
-      bottom: 0;
-      transition: bottom .3s ease-in-out; }
-    .group .body .theme {
-      display: flex; }
+      bottom: 0; }
+      .group .body:hover .drawer .theme {
+        background: #ddd; }
     .group .body .observations {
       margin: 0;
       padding: 0;
@@ -136,49 +156,51 @@ button {
         flex: 1 0 auto; }
       .group .body .observations.local {
         flex: 1 1 100%; }
-    .group .body .observation {
-      display: flex; }
-      .group .body .observation > * {
-        margin: 8px 5px; }
-      .group .body .observation .label {
-        width: 100%;
-        font-weight: bold;
-        font-family: sans-serif;
-        font-size: 24px;
-        outline: 0; }
-      .group .body .observation .tally {
-        display: flex;
-        flex: 1 0 auto;
-        font-weight: bold;
-        font-size: 1em; }
-      .group .body .observation button {
-        background: transparent; }
-      .group .body .observation .buttons {
-        display: flex;
-        flex: 1 0 auto;
-        align-items: center; }
-        .group .body .observation .buttons .remove {
-          display: block;
-          font-size: 1em;
-          position: static; }
-      .group .body .observation .strike {
-        margin-left: auto; }
-      .group .body .observation.struck .start {
-        visibility: hidden; }
-      .group .body .observation.struck .label {
-        font-weight: normal; }
-      .group .body .observation.struck .strike {
-        display: none; }
+  .group .observation {
+    display: flex; }
+    .group .observation > * {
+      padding: 8px 5px; }
+    .group .observation .label {
+      width: 100%;
+      font-weight: bold;
+      font-family: sans-serif;
+      font-size: 24px;
+      outline: 0;
+      word-break: break-word;
+      padding-left: 8px; }
+    .group .observation .tally {
+      display: flex;
+      flex: 1 0 auto;
+      font-weight: bold;
+      font-size: 1em; }
+    .group .observation button {
+      background: transparent; }
+    .group .observation .buttons {
+      display: flex;
+      flex: 1 0 auto;
+      align-items: center; }
+      .group .observation .buttons.start {
+        width: 40px; }
+      .group .observation .buttons .remove {
+        display: block;
+        font-size: 1em;
+        position: static; }
+    .group .observation .strike {
+      margin-left: auto; }
+    .group .observation.struck .start {
+      visibility: hidden; }
+    .group .observation.struck .label {
+      font-weight: normal; }
+    .group .observation.struck .strike {
+      display: none; }
 
 .settings {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background: #1c7556; }
+  align-items: center; }
   .settings * {
     background: #fff; }
   .settings .content {
-    height: 100%;
     width: 500px;
     padding: 10px; }
     .settings .content h1 {
@@ -194,14 +216,20 @@ button {
     width: 100%;
     text-align: center;
     padding: .15em; }
+  .settings h2 {
+    display: flex; }
+  .settings .hint {
+    font-size: .7em;
+    color: #777; }
   .settings .add-button {
+    margin-left: auto;
     width: 1.5em;
     font-weight: bold; }
   .settings button {
-    font-size: 1.5em;
     background: #1c7556;
     color: #fff;
-    border-radius: 2px; }
+    border-radius: 2px;
+    font-size: 1em; }
   .settings ul {
     list-style: none;
     padding: 0;
@@ -219,12 +247,14 @@ button {
       background: transparent; }
 
 .topic.button {
-  flex: 1;
+  width: 100%;
   font-weight: bold;
   font-size: 1.3rem;
   padding: 10px 0;
   border-radius: 2px;
-  overflow-y: hidden; }
+  overflow-y: hidden;
+  overflow-x: hidden;
+  text-overflow: ellipsis; }
 
 .topic.editable {
   display: block; }

@@ -130,12 +130,12 @@ view handlers { theme, observations, showTally } group =
 
 viewLabel : Handlers Msg msg r -> String -> Html msg
 viewLabel { onUpdate, remove } label =
-    div
-        [ class "title"
-        , contenteditable True
-        , onChange (onUpdate << Relabel)
-        ]
-        [ text label
+    div [ class "title" ]
+        [ input
+            [ onInput (onUpdate << Relabel)
+            , value label
+            ]
+            []
         , button [ class "remove", onClick remove ] [ text "x" ]
         ]
 
@@ -222,13 +222,27 @@ viewDefaultObservation theme tallies (id, observation) =
 
         { color, symbol, textColor } =
             Theme.lookup observation.style theme
+
+        tallyBgColor =
+            if tally == 0 then
+                Css.hex "eeeeee"
+            else
+                color
     in
         li
             [ styles [ Css.backgroundColor <| fade color tally ]
             , class "observation default"
             ]
-            [ button [ onClick (IncrementDefault id), class "tally"]
-                [ Html.text <| symbol ++ toString tally ]
+            [ div
+                [ class "buttons start"
+                , styles [ Css.backgroundColor tallyBgColor ]
+                ]
+                [ button
+                    [ onClick (IncrementDefault id)
+                    , class "tally"
+                    ]
+                    [ Html.text <| toString tally ++ symbol ]
+                ]
             , span
                 [ class "label"
                 -- , styles [ Css.color textColor ]

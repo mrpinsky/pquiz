@@ -46,8 +46,6 @@ value theme { observation, state } =
             in
                 tally * weight
 
-
-
 -- UPDATE
 
 
@@ -109,17 +107,19 @@ view { onUpdate, remove } theme { observation, state } =
                     )
     in
         li
-            [ styles [ Css.backgroundColor <| bgColor ]
+            [ styles [ Css.backgroundColor bgColor ]
             , class "observation local"
             , class stateClass
             ]
             [ div
-                [ class "buttons start" ]
+                [ class "buttons start"
+                , styles [ Css.backgroundColor color ]
+                ]
                 [ button
                     [ onClick (onUpdate Increment)
                     , class "tally"
                     ]
-                    [ Html.text <| symbol ++ tallyText ]
+                    [ Html.text <| tallyText ++ symbol ]
                 ]
             , label
             , div [ class "buttons end" ]
@@ -133,7 +133,6 @@ view { onUpdate, remove } theme { observation, state } =
                     [ Html.text "x" ]
                 ]
             ]
-
 
 
 -- JSON

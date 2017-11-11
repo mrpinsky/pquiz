@@ -1,6 +1,6 @@
 {
   "name": "pquiz",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "A Complex Instruction-style Participation Quiz tool",
   "main": "webpack.config.js",
   "scripts": {

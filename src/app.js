@@ -16,6 +16,6 @@ app.ports.focus.subscribe(function (groupId) {
       if (textarea) {
         textarea.focus();
       }
-    }, 0);
+    }, 50);
   }
 })

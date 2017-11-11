@@ -25,6 +25,7 @@ import Util
         , Handlers
         , styles
         , viewField
+        , faded
         )
 
 
@@ -101,14 +102,14 @@ view { onUpdate, remove } style =
                     ]
                     []
                     |> viewField "Background"
-                , input
-                    [ onChange (UpdateWeight << parseWeight style.weight)
-                    , type_ "number"
-                    , value <| toString style.weight
-                    , class "weight"
-                    ]
-                    []
-                    |> viewField "Weight"
+                -- , input
+                --     [ onChange (UpdateWeight << parseWeight style.weight)
+                --     , type_ "number"
+                --     , value <| toString style.weight
+                --     , class "weight"
+                --     ]
+                --     []
+                --     |> viewField "Weight"
                 ]
         ]
 
@@ -118,7 +119,7 @@ viewAsButton attrs { color, label } =
     let
         attributes =
             [ class "topic button"
-            , styles [ Css.backgroundColor color ]
+            , styles [ Css.backgroundColor <| faded color ]
             ]
                 ++ attrs
     in

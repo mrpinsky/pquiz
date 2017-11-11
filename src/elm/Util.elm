@@ -79,12 +79,18 @@ onEnter toMsg =
 
 
 onChange : (String -> msg) -> Attribute msg
-onChange tagger =
-    let
-        innerHtmlDecoder =
-            Decode.at [ "target", "value" ] Decode.string
-    in
-        on "change" (Decode.map tagger innerHtmlDecoder)
+onChange toMsg =
+    on "change" (Decode.map toMsg innerHtmlDecoder)
+
+
+onBlurWithValue : (String -> msg) -> Attribute msg
+onBlurWithValue toMsg =
+    on "blur" (Decode.map toMsg innerHtmlDecoder)
+
+
+innerHtmlDecoder : Decode.Decoder String
+innerHtmlDecoder =
+    Decode.at [ "target", "value" ] Decode.string
 
 
 viewWithRemoveButton : msg -> Html msg -> Html msg
@@ -132,7 +138,7 @@ type alias Handlers childMsg parentMsg r =
 
 
 fade : Css.Color -> Int -> Css.Color
-fade { red, green, blue }  tally =
+fade { red, green, blue } tally =
     let
         opaqueAt =
             10
@@ -144,7 +150,6 @@ fade { red, green, blue }  tally =
             toFloat tally
                 |> curve
                 |> normalize (curve opaqueAt)
-
     in
         Css.rgba red green blue alpha
 

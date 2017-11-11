@@ -127,17 +127,11 @@ view { updateMsg, doneMsg } { theme, observations } =
     div [ class "content" ]
         [ h1 [] [ text "Settings" ]
         , div [ class "body" ]
-            [ section []
-                [ h2 [] [ text "Observation Categories" ]
-                , Theme.viewAsEditable theme
-                    |> Html.map UpdateTheme
-                    |> Html.map updateMsg
-                ]
-            , section []
-                [ h2 [] [ text "Default Observations" ]
-                , viewObservations theme observations
-                    |> Html.map updateMsg
-                ]
+            [ Theme.viewAsEditable theme
+                |> Html.map UpdateTheme
+                |> Html.map updateMsg
+            , viewObservations theme observations
+                |> Html.map updateMsg
             , button [ class "submit", onClick doneMsg ]
                 [ text "Save and return" ]
             ]
@@ -146,11 +140,25 @@ view { updateMsg, doneMsg } { theme, observations } =
 
 viewObservations : Theme -> List ( String, Observation ) -> Html Msg
 viewObservations theme observations =
-    div [ class "default-observations" ]
-        [ observations
+    section [ class "default-observations" ]
+        [ h2 []
+            [ text "Default Observations"
+            , button
+                [ onClick AddObservation, class "add-button" ]
+                [ Html.text "+" ]
+            ]
+        , p [ class "hint" ]
+            [ text
+                """
+                Behaviors you know you want to track in every group. These
+                observations will display in every group with a starting tally
+                of 0.  They cannot be struck out and can only be deleted from
+                this menu.
+                """
+            ]
+        , observations
             |> List.map (viewRemovableObservation theme)
             |> ul [ class "observations" ]
-        , button [ onClick AddObservation, class "add-button" ] [ Html.text "+" ]
         ]
 
 
