@@ -36,19 +36,20 @@ button {
   top: 0; }
 
 .groups {
+  display: flex;
+  flex-direction: column;
   flex: 0 1 100%; }
 
 .row {
   display: flex;
   flex-direction: row;
-  height: 50%; }
+  flex: 1; }
 
 .group {
   display: flex;
   flex-direction: column;
   flex: 1;
   border: 2px solid #000;
-  border-radius: 6px;
   margin: 5px;
   width: 100%; }
   .group .title, .group .points {
@@ -74,48 +75,56 @@ button {
     display: flex;
     flex-direction: column;
     flex: 0 1 100%;
-    overflow-y: hidden; }
+    overflow-y: hidden;
+    position: relative; }
     .group .body .points {
       text-align: center;
       margin: 0; }
     .group .body .drawer {
       margin-top: auto;
-      max-height: 0;
-      transition: max-height .3s ease-in-out;
       display: flex;
-      flex: 0 1 100%; }
+      position: absolute;
+      bottom: -55px;
+      width: 100%;
+      transition: bottom .3s ease-in-out; }
       .group .body .drawer .theme {
         flex: 0 1 100%; }
+      .group .body .drawer .topic {
+        margin-left: 5px;
+        margin-bottom: 5px; }
+        .group .body .drawer .topic:last-child {
+          margin-right: 5px; }
       .group .body .drawer .input-container {
-        display: none; }
-      .group .body .drawer .observation,
-      .group .body .drawer input[type=text] {
-        display: none; }
-      .group .body .drawer .cancel {
-        display: none; }
-      .group .body .drawer.entering .theme {
-        flex: 0; }
-      .group .body .drawer.entering .topic {
-        flex: 1;
-        background: transparent;
-        font-size: .75em; }
-      .group .body .drawer.entering .inactive {
-        display: none; }
-      .group .body .drawer.entering .input-container {
-        flex: 1; }
-      .group .body .drawer.entering .observation,
-      .group .body .drawer.entering input[type=text] {
         display: flex;
+        flex: 1; }
+      .group .body .drawer .symbol {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1em;
+        font-weight: bold;
+        width: 2em; }
+      .group .body .drawer .observation {
         flex: 1;
+        font-size: 24px;
+        font-weight: bold;
+        box-sizing: border-box;
         border: 0;
         outline: 0;
+        background: transparent;
+        margin: 5px 8px;
+        padding: 0; }
+      .group .body .drawer .cancel {
+        padding: 0;
+        margin: 11px;
+        font-size: 1em;
+        color: #888;
         background: transparent; }
-      .group .body .drawer.entering .cancel {
-        display: initial;
-        background: transparent; }
+      .group .body .drawer.open {
+        bottom: 0; }
     .group .body:hover .drawer {
-      max-height: 2.4rem;
-      transition: max-height .3s ease-in-out; }
+      bottom: 0;
+      transition: bottom .3s ease-in-out; }
     .group .body .theme {
       display: flex; }
     .group .body .observations {
@@ -128,14 +137,15 @@ button {
       .group .body .observations.local {
         flex: 1 1 100%; }
     .group .body .observation {
-      display: flex;
-      padding: 5px; }
+      display: flex; }
+      .group .body .observation > * {
+        margin: 8px 5px; }
       .group .body .observation .label {
         width: 100%;
-        padding: 5px;
         font-weight: bold;
         font-family: sans-serif;
-        font-size: 1.2em; }
+        font-size: 24px;
+        outline: 0; }
       .group .body .observation .tally {
         display: flex;
         flex: 1 0 auto;
@@ -209,12 +219,12 @@ button {
       background: transparent; }
 
 .topic.button {
-  flex: 1 1 100%;
+  flex: 1;
   font-weight: bold;
   font-size: 1.3rem;
-  padding: 3px 3px 0;
-  margin: 5px;
-  border-radius: 2px; }
+  padding: 10px 0;
+  border-radius: 2px;
+  overflow-y: hidden; }
 
 .topic.editable {
   display: block; }
