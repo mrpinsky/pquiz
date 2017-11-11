@@ -7,8 +7,9 @@ import Quiz.Settings as Settings
 
 main : Program Never PQuiz.Model PQuiz.Msg
 main =
-    Html.beginnerProgram
-        { model = PQuiz.init Settings.default
-        , update = PQuiz.update
+    Html.program
+        { init = (PQuiz.init 8 Settings.default, Cmd.none)
+        , update = PQuiz.updateWithFocus
         , view = PQuiz.view
+        , subscriptions = (\_ -> Sub.none)
         }

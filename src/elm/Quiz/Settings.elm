@@ -29,7 +29,7 @@ import Util
 type alias Settings =
     { theme : Theme
     , showTally : Bool
-    , columns : Int
+    -- , columns : Int
     , observations : List ( ObservationId, Observation )
     , nextId : Int
     }
@@ -47,7 +47,6 @@ default =
     in
         { theme = theme
         , showTally = False
-        , columns = 4
         , observations = [] -- [ ( "demo", defaultProto <| Theme.idList theme ) ]
         , nextId = 1
         }
@@ -73,7 +72,6 @@ type Msg
     | UpdateObservation String Observation.Msg
     | RemoveObservation String
     | ToggleTally
-    | SetColumns Int
 
 
 update : Msg -> Settings -> Settings
@@ -121,18 +119,13 @@ update msg settings =
         ToggleTally ->
             { settings | showTally = not settings.showTally }
 
-        SetColumns cols ->
-            { settings | columns = cols }
-
-
-
 -- VIEW
 
 
 view : { updateMsg : Msg -> msg, doneMsg : msg } -> Settings -> Html msg
 view { updateMsg, doneMsg } { theme, observations } =
     div [ class "content" ]
-        [ h1 [] [ text "Set up your Quiz" ]
+        [ h1 [] [ text "Settings" ]
         , div [ class "body" ]
             [ section []
                 [ h2 [] [ text "Observation Categories" ]

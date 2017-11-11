@@ -1,18 +1,17 @@
-module Quiz.Group exposing (Group, Msg, init, update, view)
+module Quiz.Group exposing (Group, Msg, init, reset, update, view)
 
 import Css
-import Css.Colors
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
-import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Observation.Record as Record exposing (Record)
+import Quiz.Observation.Style exposing (Style)
 import Quiz.Settings as Settings exposing (..)
 import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
@@ -22,49 +21,28 @@ import Util exposing (..)
 
 
 type alias Group =
-    { current : Maybe Theme.Id
+    { id : Int
+    , current : Maybe Theme.Id
     , label : String
     , records : KeyedList Record
     , defaults : Dict String Int
     }
 
 
-init : String -> Group
-init label =
-    Group Nothing label KeyedList.empty Dict.empty
+init : Int -> String -> Group
+init id label =
+    Group id Nothing label KeyedList.empty Dict.empty
 
 
--- encode : Group -> Encode.Value
--- encode { label, records, defaults } =
---     Encode.object
---         [ "label" => Encode.string label
---         , "records" => encodeRecords records
---         , "defaults" => encodeDefaults defaults
---         ]
--- encodeRecords : KeyedList Record -> Encode.Value
--- encodeRecords records =
---     KeyedList.toList records
---         |> List.map Record.encode
---         |> Encode.list
--- encodeDefaults : Dict String Int -> Encode.Value
--- encodeDefaults defaults =
---     defaults
---         |> Dict.toList
---         |> List.map (Tuple.mapSecond Encode.int)
---         |> Encode.object
--- decoder : Decode.Decoder Group
--- decoder =
---     Decode.map3
---         (Group Nothing)
---         (Decode.field "label" Decode.string)
---         (Decode.field "records" <| recordsDecoder)
---         (Decode.field "defaults" <| defaultsDecoder)
--- recordsDecoder : Decode.Decoder (KeyedList Record)
--- recordsDecoder =
---     Decode.map KeyedList.fromList <| Decode.list Record.decoder
--- defaultsDecoder : Decode.Decoder (Dict String Int)
--- defaultsDecoder =
---     Decode.dict Decode.int
+reset : Group -> Group
+reset group =
+    { group
+        | current = Nothing
+        , records = KeyedList.empty
+        , defaults = Dict.empty
+    }
+
+
 -- UPDATE
 
 
@@ -76,6 +54,7 @@ type Msg
     | UpdateRecord Key Record.Msg
     | Delete Key
     | Relabel String
+
 
 
 update : Msg -> Group -> Group
@@ -136,7 +115,9 @@ commit existing style label =
 view : Handlers Msg msg r -> Settings -> Group -> Html msg
 view handlers { theme, observations, showTally } group =
     div
-        [ class "group" ]
+        [ class "group"
+        , id <| "group-" ++ toString group.id
+        ]
         [ lazy2 viewLabel handlers group.label
         , Html.map handlers.onUpdate <| div [ class "body" ] 
             [ lazy3 viewTally theme showTally group.records
@@ -184,38 +165,46 @@ viewTally theme showTally records =
 viewDrawer : Theme -> Maybe Theme.Id -> Html Msg
 viewDrawer theme current =
     let
-        bgColor =
+        contents =
             case current of
-                Just id ->
-                    Theme.lookup id theme
-                        |> .color
-                        |> faded 
-
                 Nothing ->
-                    Css.hex "dddddd"
+                    Theme.viewAsButtons StartNew current theme
+
+                Just id ->
+                    viewInput theme id
     in
         div [ class "drawer"
-            , classList [ ("entering", current /= Nothing) ]
-            , styles [ Css.backgroundColor bgColor ]
+            , classList [ ("open", current /= Nothing) ]
             ] 
-            [ Theme.viewAsButtons StartNew current theme
-            , viewCurrent theme current
+            [ contents ]
+
+
+viewInput : Theme -> Theme.Id -> Html Msg
+viewInput theme id =
+    let
+        { symbol, color } =
+            Theme.lookup id theme
+    in
+        div [ class "input-container"
+            , styles [ Css.backgroundColor <| faded color ]
+            ]
+            [ div
+                [ class "symbol"
+                , styles [ Css.backgroundColor color ]
+                ]
+                [ text symbol ]
+            , textarea
+                [ onEnter <| CommitCurrent id
+                , class "observation creating"
+                , value ""
+                ]
+                []
             , button
                 [ class "cancel"
                 , onClick CancelCurrent
                 ]
                 [ text "x" ]
             ]
-
-
-viewCurrent : Theme -> Maybe Theme.Id -> Html Msg
-viewCurrent theme current =
-    input
-        [ onEnter <| CommitCurrent (Maybe.withDefault "default" current)
-        , class "observation creating"
-        , value ""
-        ]
-        []
 
 
 viewDefaults : Theme -> List (String, Observation) -> Dict String Int -> Html Msg

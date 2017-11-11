@@ -203,29 +203,17 @@ viewAsEditable (Theme _ topics) =
 
 viewAsButtons : (Id -> msg) -> Maybe Id -> Theme -> Html msg
 viewAsButtons toMsg current (Theme _ topics) =
-    let
-        bgColor =
-            topics
-                |> NE.toList
-                |> List.filter (\topic -> current == Just topic.id)
-                |> List.head
-                |> Maybe.map .color
-                |> Maybe.withDefault (Css.hex "dddddd")
-    in
-        topics
-            |> NE.map (viewButton toMsg current)
-            |> NE.toList
-            |> div
-                [ class "theme buttons"
-                , styles [ Css.backgroundColor bgColor ]
-                ]
+    topics
+        |> NE.map (viewButton toMsg current)
+        |> NE.toList
+        |> div [ class "theme buttons" ]
 
 
 viewButton : (Id -> msg) -> Maybe Id -> Topic -> Html msg
 viewButton toMsg current topic =
     Style.viewAsButton
         [ onClick (toMsg topic.id)
-        , classList [ ("inactive", current /= Just topic.id) ]
+        , classList [ ( "inactive", current /= Just topic.id ) ]
         ]
         topic
 

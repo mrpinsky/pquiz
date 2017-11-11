@@ -1,11 +1,8 @@
-module Quiz.App exposing (..)
+port module Quiz.App exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
-import KeyedList exposing (KeyedList, Key)
--- import Json.Encode as Encode
--- import Json.Decode as Decode
 import Quiz.Group as Group exposing (Group)
 import Quiz.Settings as Settings exposing (Settings)
 import Util
@@ -18,14 +15,9 @@ import Util
         )
 
 
-main : Program Never Model Msg
-main =
-    Html.beginnerProgram
-        { model = init Settings.default
-        , update = update
-        , view = view
-        }
+-- PORTS
 
+port focus : Int -> Cmd msg
 
 
 -- MODEL
@@ -34,7 +26,8 @@ main =
 type alias Model =
     { state : State
     , settings : Settings
-    , groups : KeyedList Group
+    , nextId : Int
+    , groups : List Group
     }
 
 
@@ -43,21 +36,20 @@ type State
     | Active
 
 
-init : Settings -> Model
-init settings =
-    Model Active settings <| withGroups 8
+init : Int -> Settings -> Model
+init numGroups settings =
+    Model Active settings (numGroups + 1) <| withGroups numGroups
 
 
-withGroups : Int -> KeyedList Group
+withGroups : Int -> List Group
 withGroups count =
     List.range 1 count
         |> List.map numberedGroup
-        |> KeyedList.fromList
 
 
 numberedGroup : Int -> Group
 numberedGroup n =
-    Group.init ("Group " ++ toString n)
+    Group.init n ("Group " ++ toString n)
 
 
 
@@ -69,11 +61,38 @@ type Msg
     | SetUp
     | Resume
     | AddGroup String
-    | UpdateGroup Key Group.Msg
-    | RemoveGroup Key
+    | UpdateGroup Int Group.Msg
+    | RemoveGroup Int
     | ResetGroups
 
 
+updateWithFocus : Msg -> Model -> (Model, Cmd msg)
+updateWithFocus msg model =
+    case msg of
+        UpdateGroup id groupMsg ->
+            let
+                updateHelper group =
+                    if group.id == id then
+                        (Group.update groupMsg group, Just id)
+                    else
+                        (group, Nothing)
+
+                (groups, maybeInts) =
+                    List.map updateHelper model.groups
+                        |> List.unzip
+
+                cmd =
+                    List.filterMap identity maybeInts
+                        |> List.head
+                        |> Maybe.map focus
+                        |> Maybe.withDefault Cmd.none
+            in
+                ({ model | groups = groups }, cmd)
+
+        _ ->
+            (update msg model, Cmd.none)
+
+    
 update : Msg -> Model -> Model
 update msg model =
     case msg of
@@ -89,23 +108,32 @@ update msg model =
         AddGroup groupName ->
             let
                 newGroup =
-                    Group.init groupName
+                    Group.init model.nextId groupName
             in
-                { model | groups = KeyedList.push newGroup model.groups }
+                { model
+                    | groups = model.groups ++ [ newGroup ]
+                    , nextId = model.nextId + 1
+                }
 
-        UpdateGroup key groupMsg ->
-            { model
-                | groups =
-                    KeyedList.update key
-                        (Group.update groupMsg)
-                        model.groups
-            }
+        UpdateGroup id groupMsg ->
+            let
+                updateHelper group =
+                    if group.id == id then
+                        Group.update groupMsg group
+                    else
+                        group
+            in
+                { model | groups = List.map updateHelper model.groups }
 
-        RemoveGroup key ->
-            { model | groups = KeyedList.remove key model.groups }
+        RemoveGroup id ->
+            let
+                removeHelper group =
+                    group.id /= id
+            in
+                { model | groups = List.filter removeHelper model.groups }
 
         ResetGroups ->
-            { model | groups = withGroups <| KeyedList.length model.groups }
+            { model | groups = List.map Group.reset model.groups }
 
 
 
@@ -124,35 +152,46 @@ view { state, settings, groups } =
 
         Active ->
             div [ class "quiz page" ]
-                [ div [ class "menu-bar" ]
-                    [ menuButton (AddGroup "New Group") "Add Group"
+                [ viewGroups settings groups
+                , div [ class "menu-bar" ]
+                    [ menuButton (AddGroup "New Group") "+ Add Group"
                     , menuButton ResetGroups "Reset All Groups"
-                    , menuButton SetUp "Setup"
+                    , menuButton SetUp "Settings"
                     ]
-                , viewGroups settings groups
                 ]
 
 
-viewGroups : Settings -> KeyedList Group -> Html Msg
+viewGroups : Settings -> List Group -> Html Msg
 viewGroups settings groups =
     groups
-        |> KeyedList.keyedMap (\key item -> ( key, item ))
-        |> subdivide settings.columns
+        |> arrangeInRows
         |> List.map (viewRow settings)
         |> div [ class "groups" ]
 
 
-viewRow : Settings -> List (Key, Group) -> Html Msg
+arrangeInRows : List Group -> List (List Group)
+arrangeInRows pairs =
+    if List.length pairs <= 4 then
+        List.singleton pairs
+    else
+        let
+            half =
+                List.length pairs // 2
+        in
+            [ List.take half pairs, List.drop half pairs ]
+
+
+viewRow : Settings -> List Group -> Html Msg
 viewRow settings groups =
-    List.map (viewKeyedGroup settings) groups
+    List.map (viewGroup settings) groups
         |> div [ class "row" ]
 
 
-viewKeyedGroup : Settings -> (Key, Group) -> Html Msg
-viewKeyedGroup settings (key, group) =
+viewGroup : Settings -> Group -> Html Msg
+viewGroup settings group =
     Group.view
-        { onUpdate = UpdateGroup key
-        , remove = RemoveGroup key
+        { onUpdate = UpdateGroup group.id
+        , remove = RemoveGroup group.id
         }
         settings
         group
@@ -170,13 +209,3 @@ styledButton className msg label =
         , class className
         ]
         [ text label ]
-
-
-
--- JSON
--- encodeGroups : KeyedList Group -> Encode.Value
--- encodeGroups groups =
---     encodeKeyedList Group.encode groups
--- groupsDecoder : Decode.Decoder (KeyedList Group)
--- groupsDecoder =
---     keyedListDecoder Group.decoder
