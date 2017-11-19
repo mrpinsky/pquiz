@@ -1,4 +1,14 @@
-module Quiz.Observation.Record exposing (Record, Msg, init, value, update, view)
+module Quiz.Observation.Record
+    exposing
+        ( Record
+        , Msg
+        , init
+        , value
+        , update
+        , view
+        , encode
+        , decoder
+        )
 
 import Css
 import Html exposing (Html, li, s, button, div, text)
@@ -45,6 +55,8 @@ value theme { observation, state } =
                         |> .weight
             in
                 tally * weight
+
+
 
 -- UPDATE
 
@@ -135,7 +147,16 @@ view { onUpdate, remove } theme { observation, state } =
             ]
 
 
+
 -- JSON
+
+
+encode : Record -> Encode.Value
+encode { observation, state } =
+    Encode.object
+        [ "observation" => Observation.encode observation
+        , "state" => encodeState state
+        ]
 
 
 encodeState : State -> Encode.Value
@@ -146,6 +167,13 @@ encodeState state =
 
         Active tally ->
             Encode.int tally
+
+
+decoder : Decode.Decoder Record
+decoder =
+    Decode.map2 Record
+        (Decode.field "observation" Observation.decoder)
+        (Decode.field "state" stateDecoder)
 
 
 stateDecoder : Decode.Decoder State

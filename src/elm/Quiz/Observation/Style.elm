@@ -35,7 +35,6 @@ type alias Style r =
         , label : String
         , color : Color
         , weight : Int
-        , textColor : Color
     }
 
 
@@ -48,7 +47,6 @@ type Msg
     | UpdateLabel String
     | UpdateColor Color
     | UpdateWeight Int
-    | UpdateTextColor Color
 
 
 update : Msg -> Style r -> Style r
@@ -65,9 +63,6 @@ update msg style =
 
         UpdateWeight weight ->
             { style | weight = weight }
-
-        UpdateTextColor color ->
-            { style | textColor = color }
 
 
 view : Handlers Msg msg p -> Style r -> Html msg

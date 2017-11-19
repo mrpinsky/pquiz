@@ -53,7 +53,6 @@ type alias Topic =
     , label : String
     , color : Css.Color
     , weight : Int
-    , textColor : Css.Color
     }
 
 
@@ -83,21 +82,18 @@ defaultTopics =
       , label = "Plus"
       , color = Css.hex "5BD863"
       , weight = 1
-      , textColor = Colors.black
       }
     , { id = "question"
       , symbol = "?"
       , label = "Question"
       , color = Css.hex "FCFC6C"
       , weight = 0
-      , textColor = Colors.black
       }
     , { id = "delta"
       , symbol = delta
       , label = "Delta"
       , color = Css.hex "DB6F6F"
       , weight = -1
-      , textColor = Css.hex "ffffff"
       }
     ]
 
@@ -109,7 +105,6 @@ initTopic id =
     , label = "Observation Category"
     , color = Colors.green
     , weight = 1
-    , textColor = Css.hex "000000"
     }
 
 
@@ -120,7 +115,6 @@ defaultTopic =
     , label = "+"
     , color = Css.hex "ffffff"
     , weight = 0
-    , textColor = Css.hex "000000"
     }
 
 
@@ -293,14 +287,13 @@ reconstruct topics =
 
 topicDecoder : Decode.Decoder Topic
 topicDecoder =
-    Decode.map6
+    Decode.map5
         Topic
         (Decode.field "id" idDecoder)
         (Decode.field "symbol" Decode.string)
         (Decode.field "label" Decode.string)
         (Decode.field "color" colorDecoder)
         (Decode.field "weight" Decode.int)
-        (Decode.field "textColor" colorDecoder)
 
 
 idDecoder : Decode.Decoder Id

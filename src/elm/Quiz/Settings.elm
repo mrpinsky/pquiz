@@ -29,7 +29,6 @@ import Util
 type alias Settings =
     { theme : Theme
     , showTally : Bool
-    -- , columns : Int
     , observations : List ( ObservationId, Observation )
     , nextId : Int
     }
@@ -174,23 +173,26 @@ viewRemovableObservation theme ( id, observation ) =
 
 
 -- JSON
--- encode : Settings -> Encode.Value
--- encode { theme, observations, showTally, columns } =
---     Encode.object
---         [ "theme" => Theme.encode theme
---         , "observations" => encodeObservations observations
---         , "showTally" => Encode.bool showTally
---         , "columns" => Encode.int columns
---         ]
--- encodeObservations : List (String, Observation) -> Encode.Value
--- encodeObservations observations =
---     observations
---         |> List.map (Tuple.mapSecond Observation.encode)
---         |> Encode.object
--- decoder : Topic -> Decode.Decoder Settings
--- decoder defaultTopic =
---     Decode.map4 Settings
---         (Decode.field "theme" Theme.decoder)
---         (Decode.field "showTally" Decode.bool)
---         (Decode.field "groupWidth" <| Decode.map Css.px Decode.float)
---         (Decode.field "observations" <| Decode.keyValuePairs Observation.decoder)
+
+encode : Settings -> Encode.Value
+encode { theme, observations, showTally, nextId } =
+    Encode.object
+        [ "theme" => Theme.encode theme
+        , "showTally" => Encode.bool showTally
+        , "observations" => encodeObservations observations
+        , "nextId" => Encode.int nextId
+        ]
+
+encodeObservations : List (String, Observation) -> Encode.Value
+encodeObservations observations =
+    observations
+        |> List.map (Tuple.mapSecond Observation.encode)
+        |> Encode.object
+
+decoder : Decode.Decoder Settings
+decoder =
+    Decode.map4 Settings
+        (Decode.field "theme" Theme.decoder)
+        (Decode.field "showTally" Decode.bool)
+        (Decode.field "observations" <| Decode.keyValuePairs Observation.decoder)
+        (Decode.field "nextId" Decode.int)

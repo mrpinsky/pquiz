@@ -1,4 +1,14 @@
-module Quiz.Group exposing (Group, Msg, init, reset, update, view)
+module Quiz.Group
+    exposing
+        ( Group
+        , Msg
+        , init
+        , reset
+        , update
+        , view
+        , encode
+        , decoder
+        )
 
 import Css
 import Dict exposing (Dict)
@@ -6,7 +16,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Html.Lazy exposing (..)
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
@@ -21,8 +31,8 @@ import Util exposing (..)
 
 
 type alias Group =
-    { id : Int
-    , current : Maybe Theme.Id
+    { current : Maybe Theme.Id
+    , id : Int
     , label : String
     , records : KeyedList Record
     , defaults : Dict String Int
@@ -31,7 +41,7 @@ type alias Group =
 
 init : Int -> String -> Group
 init id label =
-    Group id Nothing label KeyedList.empty Dict.empty
+    Group Nothing id label KeyedList.empty Dict.empty
 
 
 reset : Group -> Group
@@ -41,6 +51,7 @@ reset group =
         , records = KeyedList.empty
         , defaults = Dict.empty
     }
+
 
 
 -- UPDATE
@@ -54,7 +65,6 @@ type Msg
     | UpdateRecord Key Record.Msg
     | Delete Key
     | Relabel String
-
 
 
 update : Msg -> Group -> Group
@@ -109,6 +119,8 @@ commit existing style label =
         in
             KeyedList.cons new existing
 
+
+
 -- VIEW
 
 
@@ -119,12 +131,13 @@ view handlers { theme, observations, showTally } group =
         , id <| "group-" ++ toString group.id
         ]
         [ lazy2 viewLabel handlers group.label
-        , Html.map handlers.onUpdate <| div [ class "body" ] 
-            [ lazy3 viewTally theme showTally group.records
-            , lazy3 viewDefaults theme observations group.defaults
-            , lazy2 viewRecords theme group.records
-            , lazy2 viewDrawer theme group.current
-            ]
+        , Html.map handlers.onUpdate <|
+            div [ class "body" ]
+                [ lazy3 viewTally theme showTally group.records
+                , lazy3 viewDefaults theme observations group.defaults
+                , lazy2 viewRecords theme group.records
+                , lazy2 viewDrawer theme group.current
+                ]
         ]
 
 
@@ -173,9 +186,10 @@ viewDrawer theme current =
                 Just id ->
                     viewInput theme id
     in
-        div [ class "drawer"
-            , classList [ ("open", current /= Nothing) ]
-            ] 
+        div
+            [ class "drawer"
+            , classList [ ( "open", current /= Nothing ) ]
+            ]
             [ contents ]
 
 
@@ -185,7 +199,8 @@ viewInput theme id =
         { symbol, color } =
             Theme.lookup id theme
     in
-        div [ class "input-container"
+        div
+            [ class "input-container"
             , styles [ Css.backgroundColor <| faded color ]
             ]
             [ div
@@ -207,20 +222,20 @@ viewInput theme id =
             ]
 
 
-viewDefaults : Theme -> List (String, Observation) -> Dict String Int -> Html Msg
+viewDefaults : Theme -> List ( String, Observation ) -> Dict String Int -> Html Msg
 viewDefaults theme defaults tallies =
     List.map (viewDefaultObservation theme tallies) defaults
         |> ul [ class "observations default" ]
 
 
-viewDefaultObservation : Theme -> Dict String Int -> (String, Observation) -> Html Msg
-viewDefaultObservation theme tallies (id, observation) =
+viewDefaultObservation : Theme -> Dict String Int -> ( String, Observation ) -> Html Msg
+viewDefaultObservation theme tallies ( id, observation ) =
     let
         tally =
             Dict.get id tallies
                 |> Maybe.withDefault 0
 
-        { color, symbol, textColor } =
+        { color, symbol } =
             Theme.lookup observation.style theme
 
         tallyBgColor =
@@ -244,9 +259,7 @@ viewDefaultObservation theme tallies (id, observation) =
                     [ Html.text <| toString tally ++ symbol ]
                 ]
             , span
-                [ class "label"
-                -- , styles [ Css.color textColor ]
-                ]
+                [ class "label" ]
                 [ Html.text observation.label ]
             ]
 
@@ -270,3 +283,53 @@ viewKeyedRecord theme key record =
         }
         theme
         record
+
+
+
+-- JSON
+
+
+encode : Group -> Encode.Value
+encode { id, label, records, defaults } =
+    Encode.object
+        [ "id" => Encode.int id
+        , "label" => Encode.string label
+        , "records" => encodeRecords records
+        , "defaults" => encodeDefaults defaults
+        ]
+
+
+encodeRecords : KeyedList Record -> Encode.Value
+encodeRecords records =
+    records
+        |> KeyedList.toList
+        |> List.map Record.encode
+        |> Encode.list
+
+
+encodeDefaults : Dict String Int -> Encode.Value
+encodeDefaults defaults =
+    defaults
+        |> Dict.toList
+        |> List.map (Tuple.mapSecond Encode.int)
+        |> Encode.object
+
+
+decoder : Decoder Group
+decoder =
+    Decode.map4 (Group Nothing)
+        (Decode.field "id" Decode.int)
+        (Decode.field "label" Decode.string)
+        (Decode.field "records" recordsDecoder)
+        (Decode.field "defaults" defaultsDecoder)
+
+
+recordsDecoder : Decoder (KeyedList Record)
+recordsDecoder =
+    Decode.list Record.decoder
+        |> Decode.map (KeyedList.fromList)
+
+
+defaultsDecoder : Decoder (Dict String Int)
+defaultsDecoder =
+    Decode.dict Decode.int

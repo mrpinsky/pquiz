@@ -1,8 +1,11 @@
-port module Quiz.App exposing (..)
+module Quiz.App exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (class, style, href, target)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+import Ports exposing (focus, cacheQuiz)
 import Quiz.Group as Group exposing (Group)
 import Quiz.Settings as Settings exposing (Settings)
 import Util
@@ -13,11 +16,6 @@ import Util
         , viewWithRemoveButton
         , subdivide
         )
-
-
--- PORTS
-
-port focus : Int -> Cmd msg
 
 
 -- MODEL
@@ -66,8 +64,8 @@ type Msg
     | ResetGroups
 
 
-updateWithFocus : Msg -> Model -> (Model, Cmd msg)
-updateWithFocus msg model =
+updateWithPorts : Msg -> Model -> (Model, Cmd msg)
+updateWithPorts msg model =
     case msg of
         UpdateGroup id groupMsg ->
             let
@@ -81,16 +79,23 @@ updateWithFocus msg model =
                     List.map updateHelper model.groups
                         |> List.unzip
 
-                cmd =
+                focusCmd =
                     List.filterMap identity maybeInts
                         |> List.head
                         |> Maybe.map focus
                         |> Maybe.withDefault Cmd.none
+
+                newModel =
+                    { model | groups = groups }
             in
-                ({ model | groups = groups }, cmd)
+                newModel ! [ focusCmd, cacheQuiz <| encode newModel ]
 
         _ ->
-            (update msg model, Cmd.none)
+            let
+                newModel =
+                    update msg model
+            in
+                (newModel, cacheQuiz <| encode newModel)
 
     
 update : Msg -> Model -> Model
@@ -214,3 +219,51 @@ styledButton className msg label =
         , class className
         ]
         [ text label ]
+
+
+-- JSON
+
+
+encode : Model -> Value
+encode { state, settings, nextId, groups } =
+    Encode.object
+        [ "state" => encodeState state
+        , "settings" => Settings.encode settings
+        , "nextId" => Encode.int nextId
+        , "groups" => encodeGroups groups
+        ]
+
+
+encodeState : State -> Value
+encodeState state =
+    Encode.string <| toString state
+
+
+encodeGroups : List Group -> Value
+encodeGroups groups =
+    Encode.list <| List.map Group.encode groups
+
+
+decoder : Decoder Model
+decoder =
+    Decode.map4 Model
+        (Decode.field "state" stateDecoder)
+        (Decode.field "settings" Settings.decoder)
+        (Decode.field "nextId" Decode.int)
+        (Decode.field "groups" <| Decode.list Group.decoder)
+
+
+stateDecoder : Decoder State
+stateDecoder =
+    Decode.string
+        |> Decode.map stateFromString
+
+
+stateFromString : String -> State
+stateFromString string =
+    case string of
+        "Setup" ->
+            Setup
+
+        _ ->
+            Active
