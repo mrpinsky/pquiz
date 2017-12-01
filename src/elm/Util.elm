@@ -17,22 +17,12 @@ import KeyedList exposing (KeyedList)
 
 encodeColor : Color -> Encode.Value
 encodeColor color =
-    Encode.object
-        [ "red" => Encode.int color.red
-        , "green" => Encode.int color.green
-        , "blue" => Encode.int color.blue
-        , "alpha" => Encode.float color.alpha
-        ]
+    Encode.string color.value
 
 
 colorDecoder : Decode.Decoder Color
 colorDecoder =
-    Decode.map4
-        Css.rgba
-        (Decode.field "red" Decode.int)
-        (Decode.field "green" Decode.int)
-        (Decode.field "blue" Decode.int)
-        (Decode.field "alpha" Decode.float)
+    Decode.map Css.hex Decode.string
 
 
 encodeMaybe : (a -> Encode.Value) -> Maybe a -> Encode.Value

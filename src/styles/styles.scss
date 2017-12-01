@@ -37,7 +37,7 @@ a {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  margin-bottom: .25em;
+  margin-bottom: 2px 0 .25em;
 
   button,
   a {
@@ -74,8 +74,16 @@ a {
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin: 5px;
+  margin: 8px 5px 0px;
   width: 100%;
+
+  &:first-child {
+    margin-left: 8px;
+  }
+
+  &:last-child {
+    margin-right: 8px;
+  }
 
   .title input, .points {
     font-size: calc(1vw + 1vh + 1vmin);
@@ -118,7 +126,7 @@ a {
     display: flex;
     flex-direction: column;
     flex: 0 1 100%;
-    overflow-y: hidden;
+    overflow: hidden;
     position: relative;
     background: $white;
 
@@ -127,14 +135,20 @@ a {
       margin: 0;
     }
 
+    .drawer-container {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+    }
+
     .drawer {
-      margin-top: auto;
       display: flex;
       position: absolute;
-      bottom: -50px;
+      transform: translateY(calc(100% - 12.5px));
+      bottom: 0;
       width: 100%;
       background: transparent;
-      transition: bottom .3s ease-in-out;
+      transition: transform .3s ease-in-out;
 
       .theme {
         display: flex;
@@ -143,11 +157,24 @@ a {
         transition: background-color .3s ease-in-out;
       }
 
+      .buttons {
+        flex-wrap: wrap;
+      }
+
       .topic-container {
-        margin: 5px 0 5px 5px;
+        margin: 4px 2.5px;
         border-radius: 2px;
         background: $white;
         flex: 1;
+
+        .button {
+          height: 100%;
+          padding: 5px;
+        }
+
+        &:first-child {
+          margin-left: 5px;
+        }
 
         &:last-child {
           margin-right: 5px;
@@ -198,7 +225,7 @@ a {
 
     &:hover {
       .drawer {
-        bottom: 0;
+        transform: translateY(0);
 
         .theme {
           background: #ddd;

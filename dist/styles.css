@@ -25,7 +25,7 @@ a {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  margin-bottom: .25em; }
+  margin-bottom: 2px 0 .25em; }
   .menu-bar button,
   .menu-bar a {
     margin: 2px;
@@ -56,8 +56,12 @@ a {
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin: 5px;
+  margin: 8px 5px 0px;
   width: 100%; }
+  .group:first-child {
+    margin-left: 8px; }
+  .group:last-child {
+    margin-right: 8px; }
   .group .title input, .group .points {
     font-size: calc(1vw + 1vh + 1vmin); }
   .group .title {
@@ -87,30 +91,41 @@ a {
     display: flex;
     flex-direction: column;
     flex: 0 1 100%;
-    overflow-y: hidden;
+    overflow: hidden;
     position: relative;
     background: #fff; }
     .group .body .points {
       text-align: center;
       margin: 0; }
+    .group .body .drawer-container {
+      position: absolute;
+      bottom: 0;
+      width: 100%; }
     .group .body .drawer {
-      margin-top: auto;
       display: flex;
       position: absolute;
-      bottom: -50px;
+      transform: translateY(calc(100% - 12.5px));
+      bottom: 0;
       width: 100%;
       background: transparent;
-      transition: bottom .3s ease-in-out; }
+      transition: transform .3s ease-in-out; }
       .group .body .drawer .theme {
         display: flex;
         flex: 0 1 100%;
         background: transparent;
         transition: background-color .3s ease-in-out; }
+      .group .body .drawer .buttons {
+        flex-wrap: wrap; }
       .group .body .drawer .topic-container {
-        margin: 5px 0 5px 5px;
+        margin: 4px 2.5px;
         border-radius: 2px;
         background: #fff;
         flex: 1; }
+        .group .body .drawer .topic-container .button {
+          height: 100%;
+          padding: 5px; }
+        .group .body .drawer .topic-container:first-child {
+          margin-left: 5px; }
         .group .body .drawer .topic-container:last-child {
           margin-right: 5px; }
       .group .body .drawer .input-container {
@@ -144,7 +159,7 @@ a {
         bottom: 0;
         background: #fff; }
     .group .body:hover .drawer {
-      bottom: 0; }
+      transform: translateY(0); }
       .group .body:hover .drawer .theme {
         background: #ddd; }
     .group .body .observations {
