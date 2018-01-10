@@ -11,13 +11,11 @@ module Quiz.Observation
         )
 
 import Css
-import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import KeyedList exposing (Key)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util
     exposing
@@ -57,6 +55,7 @@ type alias Style r =
 init : Theme.Id -> Observation
 init style =
     Observation style ""
+
 
 
 -- UPDATE

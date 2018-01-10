@@ -1,15 +1,12 @@
 module Quiz.Settings exposing (..)
 
-import Css exposing (Color)
 import Html exposing (..)
 import Html.Attributes exposing (value, selected, class)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onWithOptions)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import KeyedList exposing (KeyedList, Key)
 import List.Nonempty as NE exposing (Nonempty)
 import Quiz.Observation as Observation exposing (Observation)
-import Quiz.Observation.Style as Style exposing (Style)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util
     exposing
@@ -46,7 +43,7 @@ default =
     in
         { theme = theme
         , showTally = False
-        , observations = [] -- [ ( "demo", defaultProto <| Theme.idList theme ) ]
+        , observations = []
         , nextId = 1
         }
 
@@ -71,6 +68,7 @@ type Msg
     | UpdateObservation String Observation.Msg
     | RemoveObservation String
     | ToggleTally
+    | NoOp
 
 
 update : Msg -> Settings -> Settings
@@ -118,19 +116,29 @@ update msg settings =
         ToggleTally ->
             { settings | showTally = not settings.showTally }
 
+        NoOp ->
+            settings
+
+
+
 -- VIEW
 
 
-view : { updateMsg : Msg -> msg, doneMsg : msg } -> Settings -> Html msg
-view { updateMsg, doneMsg } { theme, observations } =
-    div [ class "content" ]
-        [ h1 [] [ text "Settings" ]
-        , div [ class "body" ]
+view : { updateMsg : Msg -> msg, doneMsg : msg, cancelMsg : msg } -> Settings -> Html msg
+view { updateMsg, doneMsg, cancelMsg } { theme, observations } =
+    div [ class "modal", onClickWithoutPropagation (updateMsg NoOp) ]
+        [ h1 [ class "title" ] [ text "Settings" ]
+        , div [ class "content" ]
             [ Theme.viewAsEditable theme
                 |> Html.map UpdateTheme
                 |> Html.map updateMsg
             , viewObservations theme observations
                 |> Html.map updateMsg
+            ]
+        , div [ class "buttons" ]
+            [ button [ class "cancel", onClick cancelMsg ]
+                [ text "Cancel changes" ]
+            , div [ class "spacer" ] []
             , button [ class "submit", onClick doneMsg ]
                 [ text "Save and return" ]
             ]
@@ -143,7 +151,7 @@ viewObservations theme observations =
         [ h2 []
             [ text "Default Observations"
             , button
-                [ onClick AddObservation, class "add-button" ]
+                [ onClickWithoutPropagation AddObservation, class "add-button" ]
                 [ Html.text "+" ]
             ]
         , p [ class "hint" ]
@@ -174,6 +182,7 @@ viewRemovableObservation theme ( id, observation ) =
 
 -- JSON
 
+
 encode : Settings -> Encode.Value
 encode { theme, observations, showTally, nextId } =
     Encode.object
@@ -183,11 +192,13 @@ encode { theme, observations, showTally, nextId } =
         , "nextId" => Encode.int nextId
         ]
 
-encodeObservations : List (String, Observation) -> Encode.Value
+
+encodeObservations : List ( String, Observation ) -> Encode.Value
 encodeObservations observations =
     observations
         |> List.map (Tuple.mapSecond Observation.encode)
         |> Encode.object
+
 
 decoder : Decode.Decoder Settings
 decoder =
@@ -196,3 +207,14 @@ decoder =
         (Decode.field "showTally" Decode.bool)
         (Decode.field "observations" <| Decode.keyValuePairs Observation.decoder)
         (Decode.field "nextId" Decode.int)
+
+
+
+-- UTIL
+
+
+onClickWithoutPropagation : msg -> Html.Attribute msg
+onClickWithoutPropagation msg =
+    onWithOptions "click"
+        { stopPropagation = True, preventDefault = False }
+        (Decode.succeed msg)

@@ -4,7 +4,7 @@ import Char
 import Css exposing (Color)
 import Html exposing (Html, Attribute, div, button, text)
 import Html.Attributes as Attributes
-import Html.Events exposing (on, keyCode, onClick)
+import Html.Events exposing (on, onWithOptions, keyCode, onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import KeyedList exposing (KeyedList)

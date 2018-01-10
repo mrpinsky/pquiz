@@ -8,13 +8,9 @@ module Quiz.Observation.Style
         )
 
 import Css exposing (Color)
-import Css.Colors as Colors
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Encode as Encode
-import Json.Decode as Decode
-import Tagged exposing (Tagged)
 import Util
     exposing
         ( (=>)
@@ -97,6 +93,7 @@ view { onUpdate, remove } style =
                     ]
                     []
                     |> viewField "Background"
+
                 -- , input
                 --     [ onChange (UpdateWeight << parseWeight style.weight)
                 --     , type_ "number"
