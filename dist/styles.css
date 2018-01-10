@@ -1,13 +1,15 @@
 * {
   font-family: Roboto; }
+  *:focus {
+    outline: none; }
 
 html, body, #pquiz, .page {
   height: 100%;
   margin: 0;
   background: #B7B7B7; }
 
-h2 {
-  margin: 40px 0 12px; }
+.page.blurred {
+  filter: blur(3px); }
 
 button,
 a {
@@ -211,28 +213,59 @@ a {
 
 .settings {
   display: flex;
-  flex-direction: column;
-  align-items: center; }
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); }
+  .settings.hidden {
+    visibility: hidden; }
   .settings * {
     background: #fff; }
-  .settings .content {
+  .settings .modal {
+    display: flex;
+    flex-direction: column;
     width: 500px;
-    padding: 10px; }
-    .settings .content h1 {
+    padding: 10px;
+    border-radius: 5px;
+    max-height: 90%; }
+    .settings .modal .title {
+      flex: 0;
       margin-top: 0; }
+    .settings .modal .content {
+      flex: 0 1 auto;
+      overflow-y: scroll; }
+    .settings .modal .buttons {
+      flex: 0;
+      display: flex;
+      margin-top: 1em;
+      position: relative;
+      bottom: 0;
+      background: transparent; }
+      .settings .modal .buttons button {
+        flex: 1;
+        text-align: center;
+        padding: .15em; }
+      .settings .modal .buttons .cancel {
+        background: #fff;
+        color: #1c7556; }
+      .settings .modal .buttons .spacer {
+        width: 1em;
+        background: transparent; }
   .settings .observation {
     display: flex;
     flex: 0 1 100%;
     font-size: 1rem; }
     .settings .observation .label {
       flex: 0 1 100%; }
-  .settings .submit {
-    margin-top: 1em;
-    width: 100%;
-    text-align: center;
-    padding: .15em; }
   .settings h2 {
-    display: flex; }
+    display: flex;
+    margin-top: 0;
+    margin-bottom: 12px; }
   .settings .hint {
     font-size: .7em;
     color: #777; }
