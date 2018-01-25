@@ -71,38 +71,41 @@ view { onUpdate, remove } style =
                 , class "label"
                 ]
                 []
-                |> viewField "Label"
+                |> viewField "Label" 5
                 |> Html.map onUpdate
-            , button [ onClick remove, class "remove" ] [ text "x" ]
-            ]
-        , Html.map onUpdate <|
-            div [ class "row small-fields" ]
-                [ input
-                    [ onChange UpdateSymbol
-                    , maxlength 1
-                    , value style.symbol
-                    , class "symbol"
-                    ]
-                    []
-                    |> viewField "Symbol"
-                , input
-                    [ onInput (UpdateColor << Css.hex)
-                    , type_ "color"
-                    , value style.color.value
-                    , class "background"
-                    ]
-                    []
-                    |> viewField "Background"
 
-                -- , input
-                --     [ onChange (UpdateWeight << parseWeight style.weight)
-                --     , type_ "number"
-                --     , value <| toString style.weight
-                --     , class "weight"
-                --     ]
-                --     []
-                --     |> viewField "Weight"
+            -- ]
+            -- , Html.map onUpdate <|
+            -- div [ class "row small-fields" ]
+            , input
+                [ onChange UpdateSymbol
+                , maxlength 1
+                , value style.symbol
+                , class "symbol"
                 ]
+                []
+                |> viewField "Symbol" 1
+                |> Html.map onUpdate
+            , input
+                [ onInput (UpdateColor << Css.hex)
+                , type_ "color"
+                , value style.color.value
+                , class "background"
+                ]
+                []
+                |> viewField "Color" 1
+                |> Html.map onUpdate
+
+            -- , input
+            --     [ onChange (UpdateWeight << parseWeight style.weight)
+            --     , type_ "number"
+            --     , value <| toString style.weight
+            --     , class "weight"
+            --     ]
+            --     []
+            --     |> viewField "Weight"
+            , button [ onClick remove, class "inline-remove inverted large" ] [ text "×" ]
+            ]
         ]
 
 

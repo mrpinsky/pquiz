@@ -7,7 +7,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Ports exposing (focus, cacheQuiz)
 import Quiz.Group as Group exposing (Group)
-import Quiz.Settings as Settings exposing (Settings)
+import Quiz.Settings as Settings exposing (Settings, Format(Grid, Column))
 import Util
     exposing
         ( (=>)
@@ -209,14 +209,22 @@ viewQuiz { state, settings, groups } =
 
 viewGroups : Settings -> List Group -> Html Msg
 viewGroups settings groups =
-    groups
-        |> arrangeInRows
-        |> List.map (viewRow settings)
-        |> div [ class "groups" ]
+    case settings.format of
+        Grid ->
+            groups
+                |> arrangeInGrid
+                |> List.map (viewRow settings)
+                |> div [ class "groups grid" ]
+
+        Column ->
+            groups
+                |> viewRow settings
+                |> List.singleton
+                |> div [ class "groups column" ]
 
 
-arrangeInRows : List Group -> List (List Group)
-arrangeInRows pairs =
+arrangeInGrid : List Group -> List (List Group)
+arrangeInGrid pairs =
     if List.length pairs <= 4 then
         List.singleton pairs
     else

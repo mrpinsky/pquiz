@@ -97,11 +97,11 @@ viewAsProto { onUpdate, remove } theme observation =
             |> Theme.toList
             |> List.map (viewSelectableStyle observation.style)
             |> select [ onChange UpdateStyle, class "topic" ]
-            |> viewField "Category"
+            |> viewField "Category" 1
             |> Html.map onUpdate
         , viewToRelabel observation
             |> Html.map onUpdate
-        , button [ class "remove", onClick remove ] [ text "x" ]
+        , button [ class "inline-remove inverted large", onClick remove ] [ text "×" ]
         ]
 
 
@@ -113,7 +113,7 @@ viewToRelabel { label } =
         , class "label editable"
         ]
         []
-        |> viewField "Description"
+        |> viewField "Description" 3
 
 
 viewSelectableStyle : Theme.Id -> Topic -> Html Msg

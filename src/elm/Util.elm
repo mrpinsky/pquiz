@@ -154,9 +154,9 @@ normalize max scaled =
     scaled / max
 
 
-viewField : String -> Html msg -> Html msg
-viewField label inputEl =
-    Html.label [ Attributes.class "field" ]
+viewField : String -> Int -> Html msg -> Html msg
+viewField label flex inputEl =
+    Html.label [ Attributes.class "field", styles [ Css.flex <| Css.int flex ] ]
         [ div [] [ Html.text label ]
         , inputEl
         ]

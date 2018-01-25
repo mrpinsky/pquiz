@@ -1,6 +1,7 @@
 $black: #000;
 $white: #fff;
 $gray: #adadad;
+$green: #1c7556;
 
 $menu-border: #4e6096;
 
@@ -62,6 +63,12 @@ a {
   position: absolute;
   right: 0;
   top: 0;
+}
+
+.inline-remove {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-5px);
 }
 
 .groups {
@@ -165,6 +172,7 @@ a {
 
       .buttons {
         flex-wrap: wrap;
+        width: 100%;
       }
 
       .topic-container {
@@ -266,7 +274,6 @@ a {
       width: 100%;
       font-weight: bold;
       font-family: sans-serif;
-      font-size: 24px;
       outline: 0;
       word-break: break-word;
       padding-left: 8px;
@@ -287,10 +294,6 @@ a {
       display: flex;
       flex: 1 0 auto;
       align-items: center;
-
-      &.start {
-        width: 40px;
-      }
 
       .remove {
         display: block;
@@ -319,6 +322,52 @@ a {
   }
 }
 
+.grid {
+  .observation {
+    .label {
+      font-size: 20px;
+    }
+
+    .buttons {
+      &.start {
+        width: 40px;
+        font-size: 1em;
+      }
+
+      &.end {
+        flex-direction: row-reverse;
+      }
+
+      .remove {
+        display: block;
+        font-size: 1em;
+        position: static;
+      }
+    }
+  }
+}
+
+.column {
+  .label {
+    font-size: 14px;
+  }
+
+  .buttons {
+    flex-direction: column;
+
+    &.start {
+      width: 20px;
+      font-size: 14px;
+    }
+
+    .remove {
+      display: block;
+      font-size: 1em;
+      position: static;
+    }
+  }
+}
+
 .settings {
   display: flex;
   justify-content: center;
@@ -335,8 +384,8 @@ a {
     visibility: hidden;
   }
 
-  * {
-    background: $white;
+  section {
+    margin-bottom: 1em;
   }
 
   .modal {
@@ -346,6 +395,7 @@ a {
     padding: 10px;
     border-radius: 5px;
     max-height: 90%;
+    background: $white;
 
     .title {
       flex: 0;
@@ -360,7 +410,7 @@ a {
     .buttons {
       flex: 0;
       display: flex;
-      margin-top: 1em;
+      margin-top: .7em;
       position: relative;
       bottom: 0;
       background: transparent;
@@ -369,12 +419,12 @@ a {
         flex: 1;
         // margin: 0 1em;
         text-align: center;
-        padding: .15em;
+        padding: .15em .15em .3em;
       }
 
       .cancel {
         background: $white;
-        color: #1c7556;
+        color: $green;
       }
 
       .submit {
@@ -383,6 +433,49 @@ a {
       .spacer {
         width: 1em;
         background: transparent;
+      }
+    }
+
+    .format {
+      .options {
+        display: flex;
+
+        * {
+          background: transparent;
+        }
+
+        .option {
+          background: #e1e1e1;
+          border-radius: 5px;
+          margin: .3em .5em .3em 0;
+          padding: .4em;
+          cursor: pointer;
+          flex: 1;
+
+          &:last-child {
+            margin-right: 0;
+          }
+        }
+
+        .selected {
+          background: $green;
+          color: white;
+
+          .description {
+            color: white;
+          }
+        }
+
+        .title {
+          font-size: 1.2em;
+          margin-bottom: .2em;
+        }
+
+        .description {
+          font-size: .7em;
+          display: block;
+          color: dimgray;
+        }
       }
     }
   }
@@ -415,10 +508,19 @@ a {
   }
 
   button {
-    background: #1c7556;
+    background: $green;
     color: $white;
     border-radius: 2px;
     font-size: 1em;
+
+    &.inverted {
+      background: $white;
+      color: $green;
+    }
+
+    &.large {
+      font-size: 1.2em;
+    }
   }
 
   ul {
@@ -463,6 +565,10 @@ a {
     .row {
       display: flex;
       flex-direction: row;
+
+      .symbol {
+        text-align: center;
+      }
     }
   }
 }

@@ -17,7 +17,6 @@ import Html.Events exposing (onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Quiz.Observation as Observation exposing (Observation)
-import Quiz.Observation.Style as Style exposing (Style)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util exposing (..)
 
@@ -136,13 +135,13 @@ view { onUpdate, remove } theme { observation, state } =
             , label
             , div [ class "buttons end" ]
                 [ button
-                    [ onClick (onUpdate Strike), class "strike" ]
-                    [ Html.text emdash ]
-                , button
                     [ onClick remove
                     , class "remove"
                     ]
                     [ Html.text "x" ]
+                , button
+                    [ onClick (onUpdate Strike), class "strike" ]
+                    [ Html.text emdash ]
                 ]
             ]
 

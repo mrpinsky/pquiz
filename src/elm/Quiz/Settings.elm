@@ -1,7 +1,7 @@
 module Quiz.Settings exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (value, selected, class)
+import Html.Attributes exposing (value, selected, class, classList)
 import Html.Events exposing (onClick, onWithOptions)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -28,11 +28,17 @@ type alias Settings =
     , showTally : Bool
     , observations : List ( ObservationId, Observation )
     , nextId : Int
+    , format : Format
     }
 
 
 type alias ObservationId =
     String
+
+
+type Format
+    = Grid
+    | Column
 
 
 default : Settings
@@ -45,6 +51,7 @@ default =
         , showTally = False
         , observations = []
         , nextId = 1
+        , format = Grid
         }
 
 
@@ -68,6 +75,7 @@ type Msg
     | UpdateObservation String Observation.Msg
     | RemoveObservation String
     | ToggleTally
+    | SetFormat Format
     | NoOp
 
 
@@ -116,6 +124,9 @@ update msg settings =
         ToggleTally ->
             { settings | showTally = not settings.showTally }
 
+        SetFormat format ->
+            { settings | format = format }
+
         NoOp ->
             settings
 
@@ -125,11 +136,13 @@ update msg settings =
 
 
 view : { updateMsg : Msg -> msg, doneMsg : msg, cancelMsg : msg } -> Settings -> Html msg
-view { updateMsg, doneMsg, cancelMsg } { theme, observations } =
+view { updateMsg, doneMsg, cancelMsg } { theme, observations, format } =
     div [ class "modal", onClickWithoutPropagation (updateMsg NoOp) ]
         [ h1 [ class "title" ] [ text "Settings" ]
         , div [ class "content" ]
-            [ Theme.viewAsEditable theme
+            [ viewFormatToggle format
+                |> Html.map updateMsg
+            , Theme.viewAsEditable theme
                 |> Html.map UpdateTheme
                 |> Html.map updateMsg
             , viewObservations theme observations
@@ -142,6 +155,65 @@ view { updateMsg, doneMsg, cancelMsg } { theme, observations } =
             , button [ class "submit", onClick doneMsg ]
                 [ text "Save and return" ]
             ]
+        ]
+
+
+viewFormatToggle : Format -> Html Msg
+viewFormatToggle format =
+    section [ class "format" ]
+        [ h2 [] [ text "Group Display" ]
+        , div [ class "options" ]
+            [ div
+                [ onClick (SetFormat Grid)
+                , class "option"
+                , classList
+                    [ "selected" => (format == Grid)
+                    ]
+                ]
+                [ p [ class "title" ] [ text "Grid" ]
+                , span [ class "description" ]
+                    [ text """
+                        Arrange groups in two rows. Wider groups allow for
+                        larger text, but display fewer observations at a time.
+                      """
+                    ]
+                ]
+            , div
+                [ onClick (SetFormat Column)
+                , class "option"
+                , classList
+                    [ "selected" => (format == Column)
+                    ]
+                ]
+                [ p [ class "title" ] [ text "Columns" ]
+                , span [ class "description" ]
+                    [ text """
+                        Arrange groups in one row. Taller, narrower groups
+                        display many observations, but require smaller text.
+                      """
+                    ]
+                ]
+            ]
+
+        -- [ label [ onClick (SetFormat Grid) ]
+        --     [ input
+        --         [ type_ "radio"
+        --         , name "format"
+        --         , checked (format == Grid)
+        --         ]
+        --         []
+        --     , span [ class "label-text" ] [ text "Grid" ]
+        --     ]
+        -- , label [ onClick (SetFormat Column) ]
+        --     [ input
+        --         [ type_ "radio"
+        --         , name "format"
+        --         , checked (format == Column)
+        --         ]
+        --         []
+        --     , span [ class "label-text" ] [ text "Columns" ]
+        --     ]
+        -- ]
         ]
 
 
@@ -184,12 +256,13 @@ viewRemovableObservation theme ( id, observation ) =
 
 
 encode : Settings -> Encode.Value
-encode { theme, observations, showTally, nextId } =
+encode { theme, observations, showTally, nextId, format } =
     Encode.object
         [ "theme" => Theme.encode theme
         , "showTally" => Encode.bool showTally
         , "observations" => encodeObservations observations
         , "nextId" => Encode.int nextId
+        , "format" => encodeFormat format
         ]
 
 
@@ -200,13 +273,41 @@ encodeObservations observations =
         |> Encode.object
 
 
+encodeFormat : Format -> Encode.Value
+encodeFormat format =
+    case format of
+        Grid ->
+            Encode.string "grid"
+
+        Column ->
+            Encode.string "column"
+
+
 decoder : Decode.Decoder Settings
 decoder =
-    Decode.map4 Settings
+    Decode.map5 Settings
         (Decode.field "theme" Theme.decoder)
         (Decode.field "showTally" Decode.bool)
         (Decode.field "observations" <| Decode.keyValuePairs Observation.decoder)
         (Decode.field "nextId" Decode.int)
+        (Decode.field "format" formatDecoder)
+
+
+formatDecoder : Decode.Decoder Format
+formatDecoder =
+    let
+        formatFromString string =
+            case string of
+                "column" ->
+                    Column
+
+                "grid" ->
+                    Grid
+
+                _ ->
+                    Grid
+    in
+        Decode.map formatFromString Decode.string
 
 
 

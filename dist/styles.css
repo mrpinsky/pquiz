@@ -44,6 +44,11 @@ a {
   right: 0;
   top: 0; }
 
+.inline-remove {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-5px); }
+
 .groups {
   display: flex;
   flex-direction: column;
@@ -117,7 +122,8 @@ a {
         background: transparent;
         transition: background-color .3s ease-in-out; }
       .group .body .drawer .buttons {
-        flex-wrap: wrap; }
+        flex-wrap: wrap;
+        width: 100%; }
       .group .body .drawer .topic-container {
         margin: 4px 2.5px;
         border-radius: 2px;
@@ -181,7 +187,6 @@ a {
       width: 100%;
       font-weight: bold;
       font-family: sans-serif;
-      font-size: 24px;
       outline: 0;
       word-break: break-word;
       padding-left: 8px; }
@@ -196,8 +201,6 @@ a {
       display: flex;
       flex: 1 0 auto;
       align-items: center; }
-      .group .observation .buttons.start {
-        width: 40px; }
       .group .observation .buttons .remove {
         display: block;
         font-size: 1em;
@@ -210,6 +213,34 @@ a {
       font-weight: normal; }
     .group .observation.struck .strike {
       display: none; }
+
+.grid .observation .label {
+  font-size: 20px; }
+
+.grid .observation .buttons.start {
+  width: 40px;
+  font-size: 1em; }
+
+.grid .observation .buttons.end {
+  flex-direction: row-reverse; }
+
+.grid .observation .buttons .remove {
+  display: block;
+  font-size: 1em;
+  position: static; }
+
+.column .label {
+  font-size: 14px; }
+
+.column .buttons {
+  flex-direction: column; }
+  .column .buttons.start {
+    width: 20px;
+    font-size: 14px; }
+  .column .buttons .remove {
+    display: block;
+    font-size: 1em;
+    position: static; }
 
 .settings {
   display: flex;
@@ -224,15 +255,16 @@ a {
   background-color: rgba(0, 0, 0, 0.4); }
   .settings.hidden {
     visibility: hidden; }
-  .settings * {
-    background: #fff; }
+  .settings section {
+    margin-bottom: 1em; }
   .settings .modal {
     display: flex;
     flex-direction: column;
     width: 500px;
     padding: 10px;
     border-radius: 5px;
-    max-height: 90%; }
+    max-height: 90%;
+    background: #fff; }
     .settings .modal .title {
       flex: 0;
       margin-top: 0; }
@@ -242,20 +274,45 @@ a {
     .settings .modal .buttons {
       flex: 0;
       display: flex;
-      margin-top: 1em;
+      margin-top: .7em;
       position: relative;
       bottom: 0;
       background: transparent; }
       .settings .modal .buttons button {
         flex: 1;
         text-align: center;
-        padding: .15em; }
+        padding: .15em .15em .3em; }
       .settings .modal .buttons .cancel {
         background: #fff;
         color: #1c7556; }
       .settings .modal .buttons .spacer {
         width: 1em;
         background: transparent; }
+    .settings .modal .format .options {
+      display: flex; }
+      .settings .modal .format .options * {
+        background: transparent; }
+      .settings .modal .format .options .option {
+        background: #e1e1e1;
+        border-radius: 5px;
+        margin: .3em .5em .3em 0;
+        padding: .4em;
+        cursor: pointer;
+        flex: 1; }
+        .settings .modal .format .options .option:last-child {
+          margin-right: 0; }
+      .settings .modal .format .options .selected {
+        background: #1c7556;
+        color: white; }
+        .settings .modal .format .options .selected .description {
+          color: white; }
+      .settings .modal .format .options .title {
+        font-size: 1.2em;
+        margin-bottom: .2em; }
+      .settings .modal .format .options .description {
+        font-size: .7em;
+        display: block;
+        color: dimgray; }
   .settings .observation {
     display: flex;
     flex: 0 1 100%;
@@ -278,6 +335,11 @@ a {
     color: #fff;
     border-radius: 2px;
     font-size: 1em; }
+    .settings button.inverted {
+      background: #fff;
+      color: #1c7556; }
+    .settings button.large {
+      font-size: 1.2em; }
   .settings ul {
     list-style: none;
     padding: 0;
@@ -309,6 +371,8 @@ a {
   .topic.editable .row {
     display: flex;
     flex-direction: row; }
+    .topic.editable .row .symbol {
+      text-align: center; }
 
 .field {
   display: flex;
