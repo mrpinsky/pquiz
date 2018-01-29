@@ -16,6 +16,7 @@ import Util
         , viewWithRemoveButton
         , subdivide
         , encodeMaybe
+        , onClickWithoutPropagation
         )
 
 
@@ -23,26 +24,21 @@ import Util
 
 
 type alias Model =
-    { state : State
-    , settings : Settings
-    , prevSettings : Maybe Settings
-    , nextId : Int
+    { settings : Settings
     , groups : List Group
+    , settingsCache : Maybe Settings
+    , highlightedGroupId : Maybe Int
+    , nextId : Int
     }
-
-
-type State
-    = Setup
-    | Active
 
 
 init : Int -> Settings -> Model
 init numGroups settings =
-    Model Active settings Nothing (numGroups + 1) <| withGroups numGroups
+    Model settings (initGroups numGroups) Nothing Nothing (numGroups + 1)
 
 
-withGroups : Int -> List Group
-withGroups count =
+initGroups : Int -> List Group
+initGroups count =
     List.range 1 count
         |> List.map numberedGroup
 
@@ -64,7 +60,10 @@ type Msg
     | AddGroup String
     | UpdateGroup Int Group.Msg
     | RemoveGroup Int
+    | HighlightGroup Int
+    | Unhighlight
     | ResetGroups
+    | NoOp
 
 
 updateWithPorts : Msg -> Model -> ( Model, Cmd msg )
@@ -108,19 +107,18 @@ update msg model =
             { model | settings = Settings.update subMsg model.settings }
 
         SetUp ->
-            { model | state = Setup, prevSettings = Just model.settings }
+            { model | settingsCache = Just model.settings }
 
         CancelSetUp ->
             { model
-                | state = Active
-                , settings =
-                    model.prevSettings
+                | settings =
+                    model.settingsCache
                         |> Maybe.withDefault model.settings
-                , prevSettings = Nothing
+                , settingsCache = Nothing
             }
 
         CommitSettings ->
-            { model | state = Active, prevSettings = Nothing }
+            { model | settingsCache = Nothing }
 
         AddGroup groupName ->
             let
@@ -149,8 +147,17 @@ update msg model =
             in
                 { model | groups = List.filter removeHelper model.groups }
 
+        HighlightGroup id ->
+            { model | highlightedGroupId = Just id }
+
+        Unhighlight ->
+            { model | highlightedGroupId = Nothing }
+
         ResetGroups ->
             { model | groups = List.map Group.reset model.groups }
+
+        NoOp ->
+            model
 
 
 
@@ -161,17 +168,41 @@ view : Model -> Html Msg
 view model =
     div [ class "page" ]
         [ viewQuiz model
-        , viewSettings model.state model.settings
+        , viewHighlightModal model
+        , viewSettingsModal model
         ]
 
 
-viewSettings : State -> Settings -> Html Msg
-viewSettings state settings =
-    div
-        [ class "settings"
-        , classList [ ( "hidden", state == Active ) ]
-        , onClick CommitSettings
-        ]
+viewHighlightModal : Model -> Html Msg
+viewHighlightModal { highlightedGroupId, settings, groups } =
+    let
+        lookupGroup : List Group -> Int -> Maybe Group
+        lookupGroup groups id =
+            groups
+                |> List.filter (\group -> id == group.id)
+                |> List.head
+
+        groupView : Html Msg
+        groupView =
+            highlightedGroupId
+                |> Maybe.andThen (lookupGroup groups)
+                |> Maybe.map (viewGroup settings)
+                |> Maybe.withDefault (text "")
+                |> Html.map (\_ -> NoOp)
+    in
+        viewAsModal
+            { isHidden = highlightedGroupId == Nothing
+            , backgroundClickMsg = Unhighlight
+            }
+            [ groupView ]
+
+
+viewSettingsModal : Model -> Html Msg
+viewSettingsModal { settings, settingsCache } =
+    viewAsModal
+        { isHidden = settingsCache == Nothing
+        , backgroundClickMsg = CommitSettings
+        }
         [ Settings.view
             { updateMsg = SettingsMsg
             , doneMsg = CommitSettings
@@ -181,6 +212,16 @@ viewSettings state settings =
         ]
 
 
+viewAsModal : { isHidden : Bool, backgroundClickMsg : Msg } -> List (Html Msg) -> Html Msg
+viewAsModal { isHidden, backgroundClickMsg } contents =
+    div
+        [ class "modal-container"
+        , classList [ ( "hidden", isHidden ) ]
+        , onClick backgroundClickMsg
+        ]
+        [ div [ class "modal", onClickWithoutPropagation NoOp ] contents ]
+
+
 decodeCancel : Decode.Value -> Decoder Msg
 decodeCancel value =
     Debug.log "event" value
@@ -188,23 +229,33 @@ decodeCancel value =
 
 
 viewQuiz : Model -> Html Msg
-viewQuiz { state, settings, groups } =
-    div
-        [ class "quiz page"
-        , classList [ ( "blurred", state == Setup ) ]
-        ]
-        [ viewGroups settings groups
-        , div [ class "menu-bar" ]
-            [ menuButton SetUp "Settings"
-            , menuButton (AddGroup "New Group") "+ Add Group"
-            , menuButton ResetGroups "Reset All Groups"
-            , a
-                [ href "mailto:pquiz.feedback@gmail.com"
-                , target "_blank"
-                ]
-                [ text "Send Feedback" ]
+viewQuiz { settings, settingsCache, highlightedGroupId, groups } =
+    let
+        isViewingSettings =
+            settingsCache /= Nothing
+
+        isViewingGroup =
+            highlightedGroupId /= Nothing
+
+        isViewingModal =
+            isViewingSettings || isViewingGroup
+    in
+        div
+            [ class "quiz page"
+            , classList [ ( "blurred", isViewingModal ) ]
             ]
-        ]
+            [ viewGroups settings groups
+            , div [ class "menu-bar" ]
+                [ menuButton SetUp "Settings"
+                , menuButton (AddGroup "New Group") "+ Add Group"
+                , menuButton ResetGroups "Reset All Groups"
+                , a
+                    [ href "mailto:pquiz.feedback@gmail.com"
+                    , target "_blank"
+                    ]
+                    [ text "Send Feedback" ]
+                ]
+            ]
 
 
 viewGroups : Settings -> List Group -> Html Msg
@@ -246,6 +297,7 @@ viewGroup settings group =
     Group.view
         { onUpdate = UpdateGroup group.id
         , remove = RemoveGroup group.id
+        , highlightMsg = HighlightGroup group.id
         }
         settings
         group
@@ -270,19 +322,18 @@ styledButton className msg label =
 
 
 encode : Model -> Value
-encode { state, settings, prevSettings, nextId, groups } =
+encode { settings, settingsCache, nextId, groups } =
     Encode.object
-        [ "state" => encodeState state
-        , "settings" => Settings.encode settings
-        , "prevSettings" => encodeMaybe Settings.encode prevSettings
+        [ "settings" => encodeSettings settingsCache settings
         , "nextId" => Encode.int nextId
         , "groups" => encodeGroups groups
         ]
 
 
-encodeState : State -> Value
-encodeState state =
-    Encode.string <| toString state
+encodeSettings : Maybe Settings -> Settings -> Value
+encodeSettings settingsCache settings =
+    Maybe.withDefault settings settingsCache
+        |> Settings.encode
 
 
 encodeGroups : List Group -> Value
@@ -293,24 +344,8 @@ encodeGroups groups =
 decoder : Decoder Model
 decoder =
     Decode.map5 Model
-        (Decode.field "state" stateDecoder)
         (Decode.field "settings" Settings.decoder)
-        (Decode.field "prevSettings" <| Decode.nullable Settings.decoder)
-        (Decode.field "nextId" Decode.int)
         (Decode.field "groups" <| Decode.list Group.decoder)
-
-
-stateDecoder : Decoder State
-stateDecoder =
-    Decode.string
-        |> Decode.map stateFromString
-
-
-stateFromString : String -> State
-stateFromString string =
-    case string of
-        "Setup" ->
-            Setup
-
-        _ ->
-            Active
+        (Decode.succeed Nothing)
+        (Decode.succeed Nothing)
+        (Decode.field "nextId" Decode.int)

@@ -78,6 +78,13 @@ onBlurWithValue toMsg =
     on "blur" (Decode.map toMsg innerHtmlDecoder)
 
 
+onClickWithoutPropagation : msg -> Html.Attribute msg
+onClickWithoutPropagation msg =
+    onWithOptions "click"
+        { stopPropagation = True, preventDefault = False }
+        (Decode.succeed msg)
+
+
 innerHtmlDecoder : Decode.Decoder String
 innerHtmlDecoder =
     Decode.at [ "target", "value" ] Decode.string

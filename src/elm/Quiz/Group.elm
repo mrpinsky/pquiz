@@ -21,7 +21,6 @@ import Json.Encode as Encode
 import KeyedList exposing (KeyedList, Key)
 import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Observation.Record as Record exposing (Record)
-import Quiz.Observation.Style exposing (Style)
 import Quiz.Settings as Settings exposing (..)
 import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
@@ -124,21 +123,36 @@ commit existing style label =
 -- VIEW
 
 
-view : Handlers Msg msg r -> Settings -> Group -> Html msg
+view : Handlers Msg msg { highlightMsg : msg } -> Settings -> Group -> Html msg
 view handlers { theme, observations, showTally } group =
     div
         [ class "group"
         , id <| "group-" ++ toString group.id
         ]
         [ lazy2 viewLabel handlers group.label
+        , button [ class "highlight-button unobtrusive float-left", onClick handlers.highlightMsg ] [ text "H" ]
+        , button [ class "remove unobtrusive float-right", onClick handlers.remove ] [ text "x" ]
         , Html.map handlers.onUpdate <|
             div [ class "body" ]
-                [ lazy3 viewTally theme showTally group.records
-                , lazy3 viewDefaults theme observations group.defaults
+                [ lazy3 viewDefaults theme observations group.defaults
                 , lazy2 viewRecords theme group.records
-                , lazy2 viewDrawer theme group.current
                 ]
+        , lazy3 viewDrawer handlers theme group.current
         ]
+
+
+
+-- viewAsHighlight : Handlers Msg msg r -> Settings -> Group -> Html msg
+-- viewAsHighlight handlers { theme, observations, showTally } group =
+--     div
+--         [ class "group" ]
+--         [ lazy2 viewLabel handlers group.label
+--         , Html.map handlers.onUpdate <|
+--             div [ class "body" ]
+--                 [ lazy3 viewDefaults theme observations group.defaults
+--                 , lazy2 viewRecords theme group.records
+--                 ]
+--         ]
 
 
 viewLabel : Handlers Msg msg r -> String -> Html msg
@@ -149,7 +163,6 @@ viewLabel { onUpdate, remove } label =
             , value label
             ]
             []
-        , button [ class "remove", onClick remove ] [ text "x" ]
         ]
 
 
@@ -175,8 +188,8 @@ viewTally theme showTally records =
                 ]
 
 
-viewDrawer : Theme -> Maybe Theme.Id -> Html Msg
-viewDrawer theme current =
+viewDrawer : Handlers Msg msg r -> Theme -> Maybe Theme.Id -> Html msg
+viewDrawer { onUpdate } theme current =
     let
         contents =
             case current of
@@ -190,7 +203,7 @@ viewDrawer theme current =
             [ class "drawer"
             , classList [ ( "open", current /= Nothing ) ]
             ]
-            [ contents ]
+            [ Html.map onUpdate contents ]
 
 
 viewInput : Theme -> Theme.Id -> Html Msg

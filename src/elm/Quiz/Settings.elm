@@ -76,7 +76,6 @@ type Msg
     | RemoveObservation String
     | ToggleTally
     | SetFormat Format
-    | NoOp
 
 
 update : Msg -> Settings -> Settings
@@ -127,9 +126,6 @@ update msg settings =
         SetFormat format ->
             { settings | format = format }
 
-        NoOp ->
-            settings
-
 
 
 -- VIEW
@@ -137,7 +133,7 @@ update msg settings =
 
 view : { updateMsg : Msg -> msg, doneMsg : msg, cancelMsg : msg } -> Settings -> Html msg
 view { updateMsg, doneMsg, cancelMsg } { theme, observations, format } =
-    div [ class "modal", onClickWithoutPropagation (updateMsg NoOp) ]
+    div [ class "settings" ]
         [ h1 [ class "title" ] [ text "Settings" ]
         , div [ class "content" ]
             [ viewFormatToggle format
@@ -223,7 +219,7 @@ viewObservations theme observations =
         [ h2 []
             [ text "Default Observations"
             , button
-                [ onClickWithoutPropagation AddObservation, class "add-button" ]
+                [ onClick AddObservation, class "add-button" ]
                 [ Html.text "+" ]
             ]
         , p [ class "hint" ]
@@ -308,14 +304,3 @@ formatDecoder =
                     Grid
     in
         Decode.map formatFromString Decode.string
-
-
-
--- UTIL
-
-
-onClickWithoutPropagation : msg -> Html.Attribute msg
-onClickWithoutPropagation msg =
-    onWithOptions "click"
-        { stopPropagation = True, preventDefault = False }
-        (Decode.succeed msg)

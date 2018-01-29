@@ -2,7 +2,6 @@ port module App exposing (main)
 
 import Html exposing (..)
 import Json.Decode as Decode
-import Ports exposing (cacheQuiz)
 import Quiz.App as PQuiz
 import Quiz.Settings as Settings
 
@@ -17,9 +16,9 @@ main =
         }
 
 
-init : Decode.Value -> (PQuiz.Model, Cmd msg)
+init : Decode.Value -> ( PQuiz.Model, Cmd msg )
 init flags =
-    (initModel flags, Cmd.none)
+    ( initModel flags, Cmd.none )
 
 
 initModel : Decode.Value -> PQuiz.Model
