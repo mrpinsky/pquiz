@@ -6,6 +6,7 @@ module Quiz.Group
         , reset
         , update
         , view
+        , viewStatic
         , encode
         , decoder
         )
@@ -43,6 +44,13 @@ init id label =
     Group Nothing id label KeyedList.empty Dict.empty
 
 
+defaultAsRecord : Dict String Int -> ( String, Observation ) -> Record
+defaultAsRecord tallies ( uid, observation ) =
+    Dict.get uid tallies
+        |> Maybe.withDefault 0
+        |> (flip Record.init) observation
+
+
 reset : Group -> Group
 reset group =
     { group
@@ -64,6 +72,7 @@ type Msg
     | UpdateRecord Key Record.Msg
     | Delete Key
     | Relabel String
+    | NoOp
 
 
 update : Msg -> Group -> Group
@@ -98,6 +107,9 @@ update msg group =
         Relabel newLabel ->
             { group | label = newLabel }
 
+        NoOp ->
+            group
+
 
 incrementDefault : Maybe Int -> Maybe Int
 incrementDefault tally =
@@ -129,7 +141,8 @@ view handlers { theme, observations, showTally } group =
         [ class "group"
         , id <| "group-" ++ toString group.id
         ]
-        [ lazy2 viewLabel handlers group.label
+        [ lazy viewLabel group.label
+            |> Html.map handlers.onUpdate
         , button [ class "highlight-button unobtrusive float-left", onClick handlers.highlightMsg ] [ text "H" ]
         , button [ class "remove unobtrusive float-right", onClick handlers.remove ] [ text "x" ]
         , Html.map handlers.onUpdate <|
@@ -141,51 +154,34 @@ view handlers { theme, observations, showTally } group =
         ]
 
 
+viewStatic : Settings -> Group -> Html Msg
+viewStatic { theme, observations, showTally } { label, defaults, records } =
+    let
+        defaultRecords =
+            List.map (defaultAsRecord defaults) observations
 
--- viewAsHighlight : Handlers Msg msg r -> Settings -> Group -> Html msg
--- viewAsHighlight handlers { theme, observations, showTally } group =
---     div
---         [ class "group" ]
---         [ lazy2 viewLabel handlers group.label
---         , Html.map handlers.onUpdate <|
---             div [ class "body" ]
---                 [ lazy3 viewDefaults theme observations group.defaults
---                 , lazy2 viewRecords theme group.records
---                 ]
---         ]
+        localRecords =
+            KeyedList.toList records
+
+        allRecords =
+            defaultRecords ++ localRecords
+    in
+        div
+            [ class "group" ]
+            [ lazy viewLabel label
+            , div [ class "body" ] [ viewAllRecords theme allRecords ]
+            ]
 
 
-viewLabel : Handlers Msg msg r -> String -> Html msg
-viewLabel { onUpdate, remove } label =
+viewLabel : String -> Html Msg
+viewLabel label =
     div [ class "title" ]
         [ input
-            [ onInput (onUpdate << Relabel)
+            [ onInput Relabel
             , value label
             ]
             []
         ]
-
-
-viewTally : Theme -> Bool -> KeyedList Record -> Html Msg
-viewTally theme showTally records =
-    let
-        total =
-            KeyedList.toList records
-                |> List.map (Record.value theme)
-                |> List.sum
-    in
-        total
-            |> toString
-            |> text
-            |> List.singleton
-            |> h2
-                [ classList
-                    [ ( "points", True )
-                    , ( "hidden", not showTally )
-                    , ( "total-" ++ (toString <| clamp 0 10 <| abs total), True )
-                    , ( "pos", total > 0 )
-                    ]
-                ]
 
 
 viewDrawer : Handlers Msg msg r -> Theme -> Maybe Theme.Id -> Html msg
@@ -237,50 +233,26 @@ viewInput theme id =
 
 viewDefaults : Theme -> List ( String, Observation ) -> Dict String Int -> Html Msg
 viewDefaults theme defaults tallies =
-    List.map (viewDefaultObservation theme tallies) defaults
+    List.map (viewDefaultObservation tallies theme) defaults
         |> ul [ class "observations default" ]
 
 
-viewDefaultObservation : Theme -> Dict String Int -> ( String, Observation ) -> Html Msg
-viewDefaultObservation theme tallies ( id, observation ) =
-    let
-        tally =
-            Dict.get id tallies
-                |> Maybe.withDefault 0
-
-        { color, symbol } =
-            Theme.lookup observation.style theme
-
-        tallyBgColor =
-            if tally == 0 then
-                Css.hex "eeeeee"
-            else
-                color
-    in
-        li
-            [ styles [ Css.backgroundColor <| fade color tally ]
-            , class "observation default"
-            ]
-            [ div
-                [ class "buttons start"
-                , styles [ Css.backgroundColor tallyBgColor ]
-                ]
-                [ button
-                    [ onClick (IncrementDefault id)
-                    , class "tally"
-                    ]
-                    [ Html.text <| toString tally ++ symbol ]
-                ]
-            , span
-                [ class "label" ]
-                [ Html.text observation.label ]
-            ]
+viewDefaultObservation : Dict String Int -> Theme -> ( String, Observation ) -> Html Msg
+viewDefaultObservation tallies theme ( id, observation ) =
+    defaultAsRecord tallies ( id, observation )
+        |> Record.viewOnlyIncrementable { onUpdate = (\_ -> IncrementDefault id), remove = NoOp } theme
 
 
 viewRecords : Theme -> KeyedList Record -> Html Msg
 viewRecords theme records =
     viewLocals theme records
         |> ul [ class "observations local" ]
+
+
+viewAllRecords : Theme -> List Record -> Html Msg
+viewAllRecords theme records =
+    List.map (Record.viewStatic theme) records
+        |> ul [ class "observations" ]
 
 
 viewLocals : Theme -> KeyedList Record -> List (Html Msg)

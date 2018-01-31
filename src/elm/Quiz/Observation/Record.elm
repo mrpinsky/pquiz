@@ -6,6 +6,8 @@ module Quiz.Observation.Record
         , value
         , update
         , view
+        , viewOnlyIncrementable
+        , viewStatic
         , encode
         , decoder
         )
@@ -94,56 +96,135 @@ increment state =
 
 
 view : Handlers Msg msg r -> Theme -> Record -> Html msg
-view { onUpdate, remove } theme { observation, state } =
+view handlers theme { state, observation } =
     let
         { color, symbol } =
             Theme.lookup observation.style theme
 
-        ( bgColor, stateClass, tallyText, label ) =
-            case state of
-                Struck ->
-                    ( Css.hex "eeeeee"
-                    , "struck"
-                    , "0"
-                    , s [ class "label" ] [ text observation.label ]
-                    )
+        description =
+            Observation.view observation
+                |> Html.map UpdateObservation
+                |> Html.map handlers.onUpdate
 
-                Active tally ->
-                    ( fade color tally
-                    , "active"
-                    , toString tally
-                    , Observation.view observation
-                        |> Html.map UpdateObservation
-                        |> Html.map onUpdate
-                    )
+        tally =
+            button
+                [ onClick Increment, class "tally" ]
+                [ tallyText symbol state ]
+                |> viewStartButtons color
+                |> Html.map handlers.onUpdate
+    in
+        viewEndButtons handlers
+            |> List.singleton
+            |> Generalist state color tally description
+            |> viewGeneralist
+
+
+viewOnlyIncrementable : Handlers Msg msg r -> Theme -> Record -> Html msg
+viewOnlyIncrementable handlers theme { state, observation } =
+    let
+        { color, symbol } =
+            Theme.lookup observation.style theme
+
+        description =
+            Observation.viewStatic observation
+                |> Html.map UpdateObservation
+
+        tally =
+            button
+                [ onClick Increment, class "tally" ]
+                [ tallyText symbol state ]
+                |> viewStartButtons color
+    in
+        viewGeneralist (Generalist state color tally description [])
+            |> Html.map handlers.onUpdate
+
+
+viewStatic : Theme -> Record -> Html msg
+viewStatic theme { state, observation } =
+    let
+        { color, symbol } =
+            Theme.lookup observation.style theme
+
+        description =
+            Observation.viewStatic observation
+
+        tally =
+            div [ class "tally" ] [ tallyText symbol state ]
+                |> viewStartButtons color
+    in
+        viewGeneralist (Generalist state color tally description [])
+
+
+type alias Generalist a =
+    { state : State, color : Css.Color, tally : Html a, description : Html a, menu : List (Html a) }
+
+
+viewGeneralist : Generalist msg -> Html msg
+viewGeneralist { state, color, tally, description, menu } =
+    viewAsListItem state color (tally :: description :: menu)
+
+
+viewAsListItem : State -> Css.Color -> List (Html msg) -> Html msg
+viewAsListItem state color content =
+    let
+        { background, class } =
+            stateCss color state
     in
         li
-            [ styles [ Css.backgroundColor bgColor ]
-            , class "observation local"
-            , class stateClass
+            [ styles [ Css.backgroundColor background ]
+            , Attributes.class "observation"
+            , Attributes.class class
             ]
-            [ div
-                [ class "buttons start"
-                , styles [ Css.backgroundColor color ]
-                ]
-                [ button
-                    [ onClick (onUpdate Increment)
-                    , class "tally"
-                    ]
-                    [ Html.text <| tallyText ++ symbol ]
-                ]
-            , label
-            , div [ class "buttons end" ]
-                [ button
-                    [ onClick remove
-                    , class "remove"
-                    ]
-                    [ Html.text "x" ]
-                , button
-                    [ onClick (onUpdate Strike), class "strike" ]
-                    [ Html.text emdash ]
-                ]
+            content
+
+
+type alias StateCss =
+    { class : String
+    , background : Css.Color
+    }
+
+
+stateCss : Css.Color -> State -> StateCss
+stateCss color state =
+    case state of
+        Struck ->
+            StateCss "struck" <| Css.hex "eeeeee"
+
+        Active tally ->
+            StateCss "active" <| fade color tally
+
+
+viewStartButtons : Css.Color -> Html msg -> Html msg
+viewStartButtons background content =
+    div
+        [ class "buttons start"
+        , styles [ Css.backgroundColor background ]
+        ]
+        [ content ]
+
+
+viewEndButtons : Handlers Msg msg r -> Html msg
+viewEndButtons { onUpdate, remove } =
+    div [ class "buttons end" ]
+        [ button
+            [ onClick remove
+            , class "remove"
             ]
+            [ Html.text "x" ]
+        , button
+            [ onClick (onUpdate Strike), class "strike" ]
+            [ Html.text emdash ]
+        ]
+
+
+tallyText : String -> State -> Html msg
+tallyText symbol state =
+    case state of
+        Struck ->
+            Html.text "-"
+
+        Active tally ->
+            Html.text <| toString tally ++ symbol
 
 
 

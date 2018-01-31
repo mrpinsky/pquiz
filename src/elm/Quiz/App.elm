@@ -186,7 +186,7 @@ viewHighlightModal { highlightedGroupId, settings, groups } =
         groupView =
             highlightedGroupId
                 |> Maybe.andThen (lookupGroup groups)
-                |> Maybe.map (viewGroup settings)
+                |> Maybe.map (Group.viewStatic settings)
                 |> Maybe.withDefault (text "")
                 |> Html.map (\_ -> NoOp)
     in

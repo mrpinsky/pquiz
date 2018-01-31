@@ -3,7 +3,7 @@ module Util exposing (..)
 import Char
 import Css exposing (Color)
 import Html exposing (Html, Attribute, div, button, text)
-import Html.Attributes as Attributes
+import Html.Attributes as Attributes exposing (class)
 import Html.Events exposing (on, onWithOptions, keyCode, onClick)
 import Json.Encode as Encode
 import Json.Decode as Decode
@@ -13,6 +13,20 @@ import KeyedList exposing (KeyedList)
 (=>) : a -> b -> ( a, b )
 (=>) =
     (,)
+
+
+viewStaticTally : String -> Html msg
+viewStaticTally label =
+    div [ class "tally" ] [ Html.text label ]
+
+
+viewLiveTally : msg -> String -> Html msg
+viewLiveTally incrementMsg label =
+    button
+        [ onClick incrementMsg
+        , class "tally"
+        ]
+        [ Html.text label ]
 
 
 encodeColor : Color -> Encode.Value

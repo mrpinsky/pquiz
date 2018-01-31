@@ -289,6 +289,10 @@ a {
       outline: 0;
       word-break: break-word;
       padding-left: 8px;
+
+      &.static {
+        cursor: default;
+      }
     }
 
     .tally {
@@ -296,6 +300,7 @@ a {
       flex: 1 0 auto;
       font-weight: bold;
       font-size: 1em;
+      justify-content: center;
     }
 
     button {
@@ -345,10 +350,6 @@ a {
     }
 
     .buttons {
-      &.start {
-        font-size: 1em;
-      }
-
       &.end {
         flex-direction: row-reverse;
       }

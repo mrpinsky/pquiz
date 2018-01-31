@@ -4,8 +4,9 @@ module Quiz.Observation
         , Msg
         , init
         , update
-        , viewAsProto
         , view
+        , viewStatic
+        , viewAsProto
         , encode
         , decoder
         )
@@ -82,12 +83,31 @@ update msg observation =
 
 view : Observation -> Html Msg
 view observation =
-    span
-        [ contenteditable True
-        , onInput UpdateLabel
-        , class "label static"
-        ]
-        [ Html.text observation.label ]
+    viewGeneral (Just UpdateLabel) observation
+
+
+viewStatic : Observation -> Html msg
+viewStatic observation =
+    viewGeneral Nothing observation
+
+
+viewGeneral : Maybe (String -> msg) -> Observation -> Html msg
+viewGeneral maybeInputTagger { label } =
+    let
+        inputAttributes =
+            case maybeInputTagger of
+                Nothing ->
+                    [ class "static" ]
+
+                Just tagger ->
+                    [ contenteditable True
+                    , onInput tagger
+                    ]
+
+        attributes =
+            inputAttributes ++ [ class "label" ]
+    in
+        span attributes [ Html.text label ]
 
 
 viewAsProto : Handlers Msg msg r -> Theme -> Observation -> Html msg
@@ -100,6 +120,7 @@ viewAsProto { onUpdate, remove } theme observation =
             |> viewField "Category" 1
             |> Html.map onUpdate
         , viewToRelabel observation
+            |> viewField "Description" 3
             |> Html.map onUpdate
         , button [ class "inline-remove inverted large", onClick remove ] [ text "×" ]
         ]
@@ -113,7 +134,6 @@ viewToRelabel { label } =
         , class "label editable"
         ]
         []
-        |> viewField "Description" 3
 
 
 viewSelectableStyle : Theme.Id -> Topic -> Html Msg
