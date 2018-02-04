@@ -57,7 +57,7 @@ default =
 
 defaultProto : Nonempty Theme.Id -> Observation
 defaultProto theme =
-    Observation (NE.head theme) ""
+    Observation.init (NE.head theme) ""
 
 
 defaultKeys : Settings -> List String
@@ -89,7 +89,7 @@ update msg settings =
             in
                 { settings
                     | observations =
-                        ( toString settings.nextId, Observation style "" )
+                        ( toString settings.nextId, Observation.init style "" )
                             |> List.singleton
                             |> (++) settings.observations
                     , nextId = settings.nextId + 1
@@ -190,26 +190,6 @@ viewFormatToggle format =
                     ]
                 ]
             ]
-
-        -- [ label [ onClick (SetFormat Grid) ]
-        --     [ input
-        --         [ type_ "radio"
-        --         , name "format"
-        --         , checked (format == Grid)
-        --         ]
-        --         []
-        --     , span [ class "label-text" ] [ text "Grid" ]
-        --     ]
-        -- , label [ onClick (SetFormat Column) ]
-        --     [ input
-        --         [ type_ "radio"
-        --         , name "format"
-        --         , checked (format == Column)
-        --         ]
-        --         []
-        --     , span [ class "label-text" ] [ text "Columns" ]
-        --     ]
-        -- ]
         ]
 
 

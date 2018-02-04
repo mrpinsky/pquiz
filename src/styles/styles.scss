@@ -6,11 +6,13 @@ $green: #1c7556;
 $menu-border: #4e6096;
 
 * {
-  font-family: Roboto;
-
   &:focus {
     outline: none;
   }
+}
+
+input, textarea, select, button, html {
+  font-family: Roboto;
 }
 
 html, body, #pquiz, .page {
@@ -28,13 +30,18 @@ html, body, #pquiz, .page {
 button,
 a {
   border: 0;
+  padding: 0;
   cursor: pointer;
+  font-family: Roboto;
 
-  &.highlight-button, &.remove {
+  &.floating {
+    height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     position: absolute;
     top: 0;
+    padding: 0 7px;
   }
 
   &.float-left {
@@ -44,6 +51,13 @@ a {
   &.float-right {
     right: 0;
   }
+}
+
+.unobtrusive {
+  opacity: 0;
+  transition: opacity .2s ease-in-out, transform .2s ease-in-out;
+  transform: translateX(0);
+  background: transparent;
 }
 
 .hidden {
@@ -106,44 +120,52 @@ a {
     margin-right: 8px;
   }
 
-  .title input, .points {
-    font-size: calc(1vw + 1vh + 1vmin);
+  .banner, .points {
+    font-weight: bold;
   }
 
-  .title {
+  .banner-container {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
-    padding: .2em .2em .4em;
-    align-items: center;
     background: #ddd;
     position: relative;
+  }
 
-    input {
-      flex: 1;
+  .banner {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+    padding: 7px;
+    width: 100%;
+    box-sizing: border-box;
+
+    .title {
+      flex: 1 1 auto;
+      width: 100%;
       border: 0;
       outline: 0;
       background: transparent;
-      font-family: sans-serif;
-      font-weight: bold;
-      width: 100%;
+      font-weight: 900;
       text-align: center;
     }
-  }
 
-  .unobtrusive {
-    opacity: 0;
-    transition: opacity .2s ease-in-out;
-    background: transparent;
-  }
+    button {
+      flex: 0;
+      font-size: 1em;
+      color: $green;
+      width: 2em;
 
-  &:hover {
-    .unobtrusive {
-      opacity: 1;
+      &.left {
+        margin-right: auto;
+      }
+
+      &.right {
+        margin-left: auto;
+      }
     }
   }
 
-  .remove, .highlight-button {
+  .remove {
     font-size: 1em;
   }
 
@@ -237,6 +259,12 @@ a {
   }
 
   &:hover {
+    .unobtrusive {
+      &.banner-btn {
+        opacity: 1;
+      }
+    }
+
     .drawer {
       transform: translateY(0);
 
@@ -258,40 +286,76 @@ a {
       text-align: center;
       margin: 0;
     }
+  }
 
-    .observations {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      overflow-y: auto;
+  .observations {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-y: auto;
+    overflow-x: hidden;
 
-      &.default {
-        flex: 1 0 auto;
-      }
+    &.default {
+      flex: 1 0 auto;
+    }
 
-      &.local {
-        flex: 1 1 100%;
-      }
+    &.local {
+      flex: 1 1 100%;
     }
   }
 
   .observation {
     display: flex;
+    position: relative;
 
-    > * {
-      padding: 8px 5px;
-    }
-
-    .label {
+    .container {
+      display: flex;
       width: 100%;
-      font-weight: bold;
-      font-family: sans-serif;
-      outline: 0;
-      word-break: break-word;
-      padding-left: 8px;
+      position: relative;
 
-      &.static {
-        cursor: default;
+      button {
+        background: transparent;
+      }
+
+      .buttons {
+        display: flex;
+        flex: 1 0 auto;
+        align-items: center;
+        height: 100%;
+        background: inherit;
+
+        button {
+          margin: 0 5px;
+        }
+
+        &.start {
+          width: 2em;
+        }
+
+        &.end {
+          position: absolute;
+          left: 100%;
+          top: 0;
+          background: white;
+        }
+      }
+
+      .label {
+        font-weight: bold;
+        outline: 0;
+        word-break: break-word;
+        background : transparent;
+        border: none;
+        width: 100%;
+        padding: 8px 5px;
+
+        &.editing {
+          height: 4em;
+        }
+
+        &.static {
+          cursor: default;
+        }
       }
     }
 
@@ -301,26 +365,6 @@ a {
       font-weight: bold;
       font-size: 1em;
       justify-content: center;
-    }
-
-    button {
-      background: transparent;
-    }
-
-    .buttons {
-      display: flex;
-      flex: 1 0 auto;
-      align-items: center;
-
-      &.start {
-        width: 2em;
-      }
-
-      .remove, .strike {
-        display: block;
-        font-size: 1em;
-        position: static;
-      }
     }
 
     .strike {
@@ -334,52 +378,56 @@ a {
 
       .label {
         font-weight: normal;
+        text-decoration: line-through;
       }
 
       .strike {
         display: none;
       }
     }
+
+    &:hover {
+      :not(.editing) + .unobtrusive {
+        opacity: 1;
+        transform: translateX(-100%);
+      }
+    }
   }
 }
 
 .grid {
+  .group {
+    .banner {
+      .title {
+        font-size: 1.7em;
+      }
+    }
+  }
+
   .observation {
-    .label {
-      font-size: 20px;
-    }
-
-    .buttons {
-      &.end {
-        flex-direction: row-reverse;
-      }
-
-      .remove {
-        display: block;
-        font-size: 1em;
-        position: static;
-      }
-    }
+    font-size: 20px;
   }
 }
 
 .column {
+  .group {
+    .banner {
+      justify-content: flex-start;
+
+      .title {
+        font-size: 1.2em;
+      }
+    }
+  }
+
   .label {
     font-size: 14px;
   }
 
   .buttons {
-    flex-direction: column;
-
     &.start {
       width: 20px;
       font-size: 14px;
-    }
-
-    .remove {
-      display: block;
-      font-size: 1em;
-      position: static;
     }
   }
 }
@@ -414,18 +462,12 @@ a {
     margin-bottom: 8px;
     font-size: 150%;
 
+    .title {
+      font-size: 1em;
+    }
+
     button {
       cursor: not-allowed;
-    }
-
-    .buttons {
-      &.end {
-        display: none;
-      }
-    }
-
-    .highlight-button, .remove {
-      display: none;
     }
 
     .observations {
@@ -463,6 +505,10 @@ a {
   .content {
     flex: 0 1 auto;
     overflow-y: scroll;
+  }
+
+  .delete-btn {
+    padding: 0 5px;
   }
 
   .buttons {
@@ -536,7 +582,6 @@ a {
   .observation {
     display: flex;
     flex: 0 1 100%;
-    font-size: 1rem;
 
     .label {
       flex: 0 1 100%;
@@ -630,7 +675,6 @@ a {
   display: flex;
   flex: 1 1 auto;
   text-transform: uppercase;
-  font-family: sans-serif;
   font-size: .7em;
   position: relative;
 
@@ -648,7 +692,6 @@ a {
     width: 100%;
     position: relative;
     font-weight: bold;
-    font-family: sans-serif;
     margin: 20px 3px 3px;
     border: 1px solid #ddd;
     outline: none;

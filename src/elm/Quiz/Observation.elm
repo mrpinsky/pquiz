@@ -4,6 +4,7 @@ module Quiz.Observation
         , Msg
         , init
         , update
+        , MenuContent
         , view
         , viewStatic
         , viewAsProto
@@ -15,6 +16,7 @@ import Css
 import Html exposing (..)
 import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
+import Html.Lazy as Lazy exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Quiz.Theme as Theme exposing (Theme, Topic)
@@ -26,22 +28,29 @@ import Util
         , styles
         , onChange
         , onEnter
-        , Handlers
+        , onKeyPress
         , viewField
         )
+import Util.Handlers as Handlers exposing (Handlers)
 
 
 -- MODEL
 
 
 type alias Observation =
-    { style : Theme.Id
+    { editState : EditState
+    , style : Theme.Id
     , label : String
     }
 
 
 type alias Id =
     String
+
+
+type EditState
+    = Editing
+    | NotEditing
 
 
 type alias Style r =
@@ -53,9 +62,9 @@ type alias Style r =
     }
 
 
-init : Theme.Id -> Observation
-init style =
-    Observation style ""
+init : Theme.Id -> String -> Observation
+init =
+    Observation NotEditing
 
 
 
@@ -65,6 +74,8 @@ init style =
 type Msg
     = UpdateLabel String
     | UpdateStyle Theme.Id
+    | StartEditing
+    | StopEditing
 
 
 update : Msg -> Observation -> Observation
@@ -76,38 +87,71 @@ update msg observation =
         UpdateStyle newStyle ->
             { observation | style = newStyle }
 
+        StartEditing ->
+            { observation | editState = Editing }
+
+        StopEditing ->
+            { observation | editState = NotEditing }
+
 
 
 -- VIEW
 
 
-view : Observation -> Html Msg
-view observation =
-    viewGeneral (Just UpdateLabel) observation
+view : Handlers Msg msg r -> MenuContent msg -> Observation -> Html msg
+view { onUpdate } { color, startContent, endContent } observation =
+    div [ class "container" ]
+        [ lazy viewStartMenu startContent
+        , lazy viewLabel observation
+            |> Html.map onUpdate
+        , lazy2 viewEndMenu color endContent
+        ]
 
 
-viewStatic : Observation -> Html msg
-viewStatic observation =
-    viewGeneral Nothing observation
+viewStatic : MenuContent msg -> Observation -> Html msg
+viewStatic { color, startContent, endContent } { label } =
+    div [ class "container" ]
+        [ lazy viewStartMenu startContent
+        , span [ class "label" ] [ Html.text label ]
+        , lazy2 viewEndMenu color endContent
+        ]
 
 
-viewGeneral : Maybe (String -> msg) -> Observation -> Html msg
-viewGeneral maybeInputTagger { label } =
-    let
-        inputAttributes =
-            case maybeInputTagger of
-                Nothing ->
-                    [ class "static" ]
+viewStartMenu : List (Html msg) -> Html msg
+viewStartMenu content =
+    div [ class "buttons start" ] content
 
-                Just tagger ->
-                    [ contenteditable True
-                    , onInput tagger
-                    ]
 
-        attributes =
-            inputAttributes ++ [ class "label" ]
-    in
-        span attributes [ Html.text label ]
+viewEndMenu : Css.Color -> List (Html msg) -> Html msg
+viewEndMenu color content =
+    div
+        [ class "buttons end unobtrusive"
+        , styles [ Css.backgroundColor color ]
+        ]
+        content
+
+
+type alias MenuContent msg =
+    { color : Css.Color
+    , startContent : List (Html msg)
+    , endContent : List (Html msg)
+    }
+
+
+viewLabel : Observation -> Html Msg
+viewLabel { label, editState } =
+    case editState of
+        Editing ->
+            textarea
+                [ class "label editing"
+                , onInput UpdateLabel
+                , onBlur StopEditing
+                , value label
+                ]
+                []
+
+        NotEditing ->
+            span [ class "label", onClick StartEditing ] [ Html.text label ]
 
 
 viewAsProto : Handlers Msg msg r -> Theme -> Observation -> Html msg
@@ -122,7 +166,7 @@ viewAsProto { onUpdate, remove } theme observation =
         , viewToRelabel observation
             |> viewField "Description" 3
             |> Html.map onUpdate
-        , button [ class "inline-remove inverted large", onClick remove ] [ text "×" ]
+        , button [ class "fas fa-trash inverted delete-btn", onClick remove ] []
         ]
 
 
@@ -152,8 +196,9 @@ viewSelectableStyle currentlySelected { id, label } =
 
 decoder : Decoder Observation
 decoder =
-    Decode.map2
+    Decode.map3
         Observation
+        (Decode.succeed NotEditing)
         (Decode.field "style" Theme.idDecoder)
         (Decode.field "label" Decode.string)
 

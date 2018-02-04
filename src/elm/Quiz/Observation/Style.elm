@@ -18,11 +18,11 @@ import Util
         , delta
         , encodeColor
         , colorDecoder
-        , Handlers
         , styles
         , viewField
         , faded
         )
+import Util.Handlers as Handlers exposing (Handlers)
 
 
 type alias Style r =
@@ -71,15 +71,11 @@ view { onUpdate, remove } style =
                 , class "label"
                 ]
                 []
-                |> viewField "Label" 5
+                |> viewField "Label" 8
                 |> Html.map onUpdate
-
-            -- ]
-            -- , Html.map onUpdate <|
-            -- div [ class "row small-fields" ]
             , input
                 [ onChange UpdateSymbol
-                , maxlength 1
+                , maxlength 2
                 , value style.symbol
                 , class "symbol"
                 ]
@@ -95,16 +91,11 @@ view { onUpdate, remove } style =
                 []
                 |> viewField "Color" 1
                 |> Html.map onUpdate
-
-            -- , input
-            --     [ onChange (UpdateWeight << parseWeight style.weight)
-            --     , type_ "number"
-            --     , value <| toString style.weight
-            --     , class "weight"
-            --     ]
-            --     []
-            --     |> viewField "Weight"
-            , button [ onClick remove, class "inline-remove inverted large" ] [ text "×" ]
+            , button
+                [ onClick remove
+                , class "fas fa-trash inverted delete-btn"
+                ]
+                []
             ]
         ]
 

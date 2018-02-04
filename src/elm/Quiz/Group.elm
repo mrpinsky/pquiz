@@ -14,7 +14,7 @@ module Quiz.Group
 import Css
 import Dict exposing (Dict)
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes as Attributes exposing (..)
 import Html.Events as Events exposing (..)
 import Html.Lazy exposing (..)
 import Json.Decode as Decode exposing (Decoder)
@@ -25,6 +25,7 @@ import Quiz.Observation.Record as Record exposing (Record)
 import Quiz.Settings as Settings exposing (..)
 import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
+import Util.Handlers as Handlers exposing (Handlers)
 
 
 -- MODEL
@@ -126,7 +127,7 @@ commit existing style label =
     else
         let
             new =
-                Record.init 1 <| Observation style label
+                Record.init 1 <| Observation.init style label
         in
             KeyedList.cons new existing
 
@@ -136,21 +137,42 @@ commit existing style label =
 
 
 view : Handlers Msg msg { highlightMsg : msg } -> Settings -> Group -> Html msg
-view handlers { theme, observations, showTally } group =
+view handlers { theme, observations, showTally } { id, label, defaults, records, current } =
     div
         [ class "group"
-        , id <| "group-" ++ toString group.id
+        , Attributes.id <| "group-" ++ toString id
         ]
-        [ lazy viewLabel group.label
-            |> Html.map handlers.onUpdate
-        , button [ class "highlight-button unobtrusive float-left", onClick handlers.highlightMsg ] [ text "H" ]
-        , button [ class "remove unobtrusive float-right", onClick handlers.remove ] [ text "x" ]
+        [ viewBanner
+            [ button
+                [ class "magnify unobtrusive left banner-btn"
+                , class "fas fa-star"
+                , onClick handlers.highlightMsg
+                ]
+                []
+            , lazy viewLabel label
+                |> Html.map handlers.onUpdate
+            , button
+                [ class "unobtrusive right banner-btn"
+                , class "fas fa-trash"
+                , onClick handlers.remove
+                ]
+                []
+            ]
         , Html.map handlers.onUpdate <|
             div [ class "body" ]
-                [ lazy3 viewDefaults theme observations group.defaults
-                , lazy2 viewRecords theme group.records
+                [ lazy3 viewDefaults theme observations defaults
+                , lazy2 viewRecords theme records
                 ]
-        , lazy3 viewDrawer handlers theme group.current
+        , lazy3 viewDrawer handlers theme current
+        ]
+
+
+viewBanner : List (Html msg) -> Html msg
+viewBanner contents =
+    div [ class "banner-container" ]
+        [ div
+            [ class "banner" ]
+            contents
         ]
 
 
@@ -168,20 +190,19 @@ viewStatic { theme, observations, showTally } { label, defaults, records } =
     in
         div
             [ class "group" ]
-            [ lazy viewLabel label
+            [ viewBanner [ lazy viewLabel label ]
             , div [ class "body" ] [ viewAllRecords theme allRecords ]
             ]
 
 
 viewLabel : String -> Html Msg
 viewLabel label =
-    div [ class "title" ]
-        [ input
-            [ onInput Relabel
-            , value label
-            ]
-            []
+    input
+        [ onInput Relabel
+        , class "title"
+        , value label
         ]
+        []
 
 
 viewDrawer : Handlers Msg msg r -> Theme -> Maybe Theme.Id -> Html msg

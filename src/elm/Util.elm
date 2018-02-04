@@ -69,6 +69,11 @@ checkmark =
     stringFromCode 10004
 
 
+onKeyPress : (String -> msg) -> Attribute msg
+onKeyPress toMsg =
+    on "keypress" (Decode.map toMsg innerHtmlDecoder)
+
+
 onEnter : (String -> msg) -> Attribute msg
 onEnter toMsg =
     let
@@ -139,13 +144,6 @@ subdivide subSize list =
             |> List.drop subSize
             |> subdivide subSize
             |> (::) (List.take subSize list)
-
-
-type alias Handlers childMsg parentMsg r =
-    { r
-        | onUpdate : childMsg -> parentMsg
-        , remove : parentMsg
-    }
 
 
 fade : Css.Color -> Int -> Css.Color
