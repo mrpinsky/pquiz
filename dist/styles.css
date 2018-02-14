@@ -7,7 +7,7 @@ input, textarea, select, button, html {
 html, body, #pquiz, .page {
   height: 100%;
   margin: 0;
-  background: #B7B7B7; }
+  background: #b7b7b7; }
 
 .page.blurred {
   filter: blur(3px); }
@@ -301,9 +301,41 @@ a {
     background: #fff;
     display: flex;
     flex-direction: column;
-    font-size: 150%; }
+    font-size: 150%;
+    overflow: hidden; }
+  .modal-container .tabs {
+    display: flex;
+    flex-direction: row;
+    font-weight: bold; }
+    .modal-container .tabs .tab {
+      display: flex;
+      align-items: center;
+      flex: 1 1 auto;
+      border-left: 2px solid #aaa;
+      border-bottom: 2px solid #aaa;
+      padding: 5px;
+      font-size: 85%;
+      background: #ddd; }
+      .modal-container .tabs .tab:first-child {
+        padding-left: 8px;
+        border-left-width: 0; }
+      .modal-container .tabs .tab:last-child {
+        padding-right: 8px; }
+      .modal-container .tabs .tab.preceding {
+        border-bottom-right-radius: 5px;
+        border-right: 2px solid #aaa; }
+      .modal-container .tabs .tab.selected {
+        background: #fff;
+        border: none;
+        font-size: 95%; }
+        .modal-container .tabs .tab.selected + .tab {
+          border-bottom-left-radius: 5px; }
+    .modal-container .tabs .tab-label {
+      flex: 1 1 auto;
+      cursor: pointer;
+      text-align: center; }
   .modal-container .group {
-    margin-bottom: 8px;
+    margin: 0;
     font-size: 150%; }
     .modal-container .group .title {
       font-size: 1em; }

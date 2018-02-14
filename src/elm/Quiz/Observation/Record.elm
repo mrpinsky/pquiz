@@ -132,8 +132,7 @@ view handlers theme { state, observation } =
                 (MenuContent color [ tally ] endButtons)
                 observation
     in
-        Generalist state color content
-            |> viewGeneralist
+        viewAsListItem state color content
 
 
 viewOnlyIncrementable : Handlers Msg msg r -> Theme -> Record -> Html msg
@@ -153,7 +152,7 @@ viewOnlyIncrementable handlers theme { state, observation } =
                 (MenuContent color [ tally ] [])
                 observation
     in
-        viewGeneralist (Generalist state color content)
+        viewAsListItem state color content
             |> Html.map handlers.onUpdate
 
 
@@ -170,22 +169,10 @@ viewStatic theme { state, observation } =
         content =
             Observation.viewStatic (MenuContent color [ tally ] []) observation
     in
-        viewGeneralist (Generalist state color content)
+        viewAsListItem state color content
 
 
-type alias Generalist a =
-    { state : State
-    , color : Css.Color
-    , body : Html a
-    }
-
-
-viewGeneralist : Generalist msg -> Html msg
-viewGeneralist { state, color, body } =
-    viewAsListItem state color [ body ]
-
-
-viewAsListItem : State -> Css.Color -> List (Html msg) -> Html msg
+viewAsListItem : State -> Css.Color -> Html msg -> Html msg
 viewAsListItem state color content =
     let
         { background, class } =
@@ -196,7 +183,7 @@ viewAsListItem state color content =
             , Attributes.class "observation"
             , Attributes.class class
             ]
-            content
+            [ content ]
 
 
 type alias StateCss =

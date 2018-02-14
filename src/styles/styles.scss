@@ -1,9 +1,13 @@
 $black: #000;
 $white: #fff;
+$light-gray: #ddd;
 $gray: #adadad;
+$dark-gray: #b7b7b7;
 $green: #1c7556;
 
 $menu-border: #4e6096;
+$tab-color: #ddd;
+$tab-border-color: #aaa;
 
 * {
   &:focus {
@@ -18,7 +22,7 @@ input, textarea, select, button, html {
 html, body, #pquiz, .page {
   height: 100%;
   margin: 0;
-  background: #B7B7B7;
+  background: $dark-gray;
 }
 
 .page {
@@ -79,7 +83,7 @@ a {
   a {
     margin: 2px;
     font-size: 1em;
-    background: #ddd;
+    background: $light-gray;
     color: #333;
     padding: 1px 6px;
     text-decoration: none;
@@ -127,7 +131,7 @@ a {
   .banner-container {
     display: flex;
     flex-direction: column;
-    background: #ddd;
+    background: $light-gray;
     position: relative;
   }
 
@@ -269,7 +273,7 @@ a {
       transform: translateY(0);
 
       .theme {
-        background: #ddd;
+        background: $light-gray;
       }
     }
   }
@@ -456,10 +460,58 @@ a {
     display: flex;
     flex-direction: column;
     font-size: 150%;
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: flex;
+    flex-direction: row;
+    font-weight: bold;
+
+    .tab {
+      display: flex;
+      align-items: center;
+      flex: 1 1 auto;
+      border-left: 2px solid $tab-border-color;
+      border-bottom: 2px solid $tab-border-color;
+      padding: 5px;
+      font-size: 85%;
+      background: $tab-color;
+
+      &:first-child {
+        padding-left: 8px;
+        border-left-width: 0;
+      }
+
+      &:last-child {
+        padding-right: 8px;
+      }
+
+      &.preceding {
+        border-bottom-right-radius: 5px;
+        border-right: 2px solid $tab-border-color;
+      }
+
+      &.selected {
+        background: $white;
+        border: none;
+        font-size: 95%;
+
+        + .tab {
+          border-bottom-left-radius: 5px;
+        }
+      }
+    }
+
+    .tab-label {
+      flex: 1 1 auto;
+      cursor: pointer;
+      text-align: center;
+    }
   }
 
   .group {
-    margin-bottom: 8px;
+    margin: 0;
     font-size: 150%;
 
     .title {
@@ -693,7 +745,7 @@ a {
     position: relative;
     font-weight: bold;
     margin: 20px 3px 3px;
-    border: 1px solid #ddd;
+    border: 1px solid $light-gray;
     outline: none;
     font-size: 1rem;
   }

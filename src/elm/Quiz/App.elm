@@ -182,19 +182,68 @@ viewHighlightModal { highlightedGroupId, settings, groups } =
                 |> List.filter (\group -> id == group.id)
                 |> List.head
 
-        groupView : Html Msg
-        groupView =
+        contents : List (Html Msg)
+        contents =
             highlightedGroupId
                 |> Maybe.andThen (lookupGroup groups)
-                |> Maybe.map (Group.viewStatic settings)
-                |> Maybe.withDefault (text "")
-                |> Html.map (\_ -> NoOp)
+                |> Maybe.map (viewHighlightContents settings groups)
+                |> Maybe.withDefault [ text "" ]
     in
         viewAsModal
             { isHidden = highlightedGroupId == Nothing
             , backgroundClickMsg = Unhighlight
             }
-            [ groupView ]
+            contents
+
+
+viewHighlightContents : Settings -> List Group -> Group -> List (Html Msg)
+viewHighlightContents settings groups group =
+    [ viewHighlightTabs groups group
+    , Group.viewStatic settings group
+        |> Html.map (\_ -> NoOp)
+    ]
+
+
+viewHighlightTabs : List Group -> Group -> Html Msg
+viewHighlightTabs groups group =
+    groups
+        |> mapWithNext (viewHighlightTab group.id)
+        |> div [ class "tabs" ]
+
+
+mapWithNext : (a -> Maybe a -> b) -> List a -> List b
+mapWithNext fn list =
+    mapWithNextHelper fn list []
+
+
+mapWithNextHelper : (a -> Maybe a -> b) -> List a -> List b -> List b
+mapWithNextHelper fn list acc =
+    case list of
+        [] ->
+            List.reverse acc
+
+        head :: tail ->
+            ((fn head <| List.head tail) :: acc)
+                |> mapWithNextHelper fn tail
+
+
+viewHighlightTab : Int -> Group -> Maybe Group -> Html Msg
+viewHighlightTab highlighted { id, label } nextGroup =
+    let
+        precedesSelected =
+            Maybe.map .id nextGroup
+                |> Maybe.map ((==) highlighted)
+                |> Maybe.withDefault False
+    in
+        div
+            [ class "tab"
+            , classList
+                [ ( "selected", highlighted == id )
+                , ( "preceding", precedesSelected )
+                ]
+            , onClick (HighlightGroup id)
+            ]
+            [ span [ class "tab-label" ] [ text label ] ]
 
 
 viewSettingsModal : Model -> Html Msg

@@ -145,7 +145,7 @@ view handlers { theme, observations, showTally } { id, label, defaults, records,
         [ viewBanner
             [ button
                 [ class "magnify unobtrusive left banner-btn"
-                , class "fas fa-star"
+                , class "far fa-star"
                 , onClick handlers.highlightMsg
                 ]
                 []
@@ -190,8 +190,7 @@ viewStatic { theme, observations, showTally } { label, defaults, records } =
     in
         div
             [ class "group" ]
-            [ viewBanner [ lazy viewLabel label ]
-            , div [ class "body" ] [ viewAllRecords theme allRecords ]
+            [ div [ class "body" ] [ viewAllRecords theme allRecords ]
             ]
 
 

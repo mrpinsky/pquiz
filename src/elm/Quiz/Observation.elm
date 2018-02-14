@@ -109,11 +109,10 @@ view { onUpdate } { color, startContent, endContent } observation =
 
 
 viewStatic : MenuContent msg -> Observation -> Html msg
-viewStatic { color, startContent, endContent } { label } =
+viewStatic { color, startContent } { label } =
     div [ class "container" ]
         [ lazy viewStartMenu startContent
         , span [ class "label" ] [ Html.text label ]
-        , lazy2 viewEndMenu color endContent
         ]
 
 
