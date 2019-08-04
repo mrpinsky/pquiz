@@ -1,7 +1,0 @@
-node_modules/
-**/elm-stuff/
-.*
-!*.sql
-src/elm/src/
-**/elm.js
-tags
