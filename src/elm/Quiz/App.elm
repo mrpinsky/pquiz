@@ -1,23 +1,24 @@
-module Quiz.App exposing (..)
+module Quiz.App exposing (Model, Msg(..), arrangeInGrid, decodeCancel, decoder, encode, encodeGroups, encodeSettings, init, initGroups, mapWithNext, mapWithNextHelper, menuButton, numberedGroup, styledButton, update, updateWithPorts, view, viewAsModal, viewGroup, viewGroups, viewHighlightContents, viewHighlightModal, viewHighlightTab, viewHighlightTabs, viewQuiz, viewRow, viewSettingsModal)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, classList, style, href, target)
-import Html.Events exposing (onClick, on)
+import Html.Attributes exposing (class, classList, href, rel, style, target)
+import Html.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Ports exposing (focus, cacheQuiz)
+import Ports exposing (cacheQuiz, focus)
 import Quiz.Group as Group exposing (Group)
-import Quiz.Settings as Settings exposing (Settings, Format(Grid, Column))
+import Quiz.Settings as Settings exposing (Format(Column, Grid), Settings)
 import Util
     exposing
         ( (=>)
         , encodeKeyedList
-        , keyedListDecoder
-        , viewWithRemoveButton
-        , subdivide
         , encodeMaybe
+        , keyedListDecoder
         , onClickWithoutPropagation
+        , subdivide
+        , viewWithRemoveButton
         )
+
 
 
 -- MODEL
@@ -29,12 +30,13 @@ type alias Model =
     , settingsCache : Maybe Settings
     , highlightedGroupId : Maybe Int
     , nextId : Int
+    , announcementRead : Bool
     }
 
 
 init : Int -> Settings -> Model
 init numGroups settings =
-    Model settings (initGroups numGroups) Nothing Nothing (numGroups + 1)
+    Model settings (initGroups numGroups) Nothing Nothing (numGroups + 1) False
 
 
 initGroups : Int -> List Group
@@ -63,6 +65,7 @@ type Msg
     | HighlightGroup Int
     | Unhighlight
     | ResetGroups
+    | ReadAnnouncement
     | NoOp
 
 
@@ -74,6 +77,7 @@ updateWithPorts msg model =
                 updateHelper group =
                     if group.id == id then
                         ( Group.update groupMsg group, Just id )
+
                     else
                         ( group, Nothing )
 
@@ -90,14 +94,14 @@ updateWithPorts msg model =
                 newModel =
                     { model | groups = groups }
             in
-                newModel ! [ focusCmd, cacheQuiz <| encode newModel ]
+            newModel ! [ focusCmd, cacheQuiz <| encode newModel ]
 
         _ ->
             let
                 newModel =
                     update msg model
             in
-                ( newModel, cacheQuiz <| encode newModel )
+            ( newModel, cacheQuiz <| encode newModel )
 
 
 update : Msg -> Model -> Model
@@ -125,27 +129,28 @@ update msg model =
                 newGroup =
                     Group.init model.nextId groupName
             in
-                { model
-                    | groups = model.groups ++ [ newGroup ]
-                    , nextId = model.nextId + 1
-                }
+            { model
+                | groups = model.groups ++ [ newGroup ]
+                , nextId = model.nextId + 1
+            }
 
         UpdateGroup id groupMsg ->
             let
                 updateHelper group =
                     if group.id == id then
                         Group.update groupMsg group
+
                     else
                         group
             in
-                { model | groups = List.map updateHelper model.groups }
+            { model | groups = List.map updateHelper model.groups }
 
         RemoveGroup id ->
             let
                 removeHelper group =
                     group.id /= id
             in
-                { model | groups = List.filter removeHelper model.groups }
+            { model | groups = List.filter removeHelper model.groups }
 
         HighlightGroup id ->
             { model | highlightedGroupId = Just id }
@@ -155,6 +160,9 @@ update msg model =
 
         ResetGroups ->
             { model | groups = List.map Group.reset model.groups }
+
+        ReadAnnouncement ->
+            { model | announcementRead = True }
 
         NoOp ->
             model
@@ -170,6 +178,101 @@ view model =
         [ viewQuiz model
         , viewHighlightModal model
         , viewSettingsModal model
+        , viewAnnouncementModal model
+        ]
+
+
+viewAnnouncementModal : Model -> Html Msg
+viewAnnouncementModal { announcementRead } =
+    viewAsModal
+        { isHidden = announcementRead
+        , backgroundClickMsg =
+            ReadAnnouncement
+        }
+        [ newDomainAnnouncement ]
+
+
+newDomainAnnouncement : Html Msg
+newDomainAnnouncement =
+    div
+        [ style
+            [ "margin" => "2em"
+            , "height" => "100%"
+            ]
+        ]
+        [ h3 [ style [ "margin-top" => "0", "color" => "#1c7556" ] ] [ text "Exciting Update" ]
+        , p [] [ text "Hi there!" ]
+        , p []
+            [ text """
+            Thanks for using my participation quiz tool; I'm glad you like it. I've
+            been hard at work at building a new and improved version. It
+            currently supports
+            """
+            , ul []
+                [ li [] [ text "Saving and accessing as many different quizzes as you need" ]
+                , li [] [ text "A printable summary of any quiz" ]
+                , li [] [ text "Storing and default observations as defaults and appling them to future quizzes" ]
+                ]
+            , text """
+            and it's where I'll be adding all new features in the future.
+            """
+            ]
+        , p []
+            [ text """
+            I'd love it if you checked it out at
+            """
+            , a
+                [ href "https://pquiz.app"
+                , target "_blank"
+                , rel "noopener noreferrer"
+                ]
+                [ text "pquiz.app" ]
+            , text "."
+            , text """
+            And if you have any feedback on either version, or any ideas for
+            features you'd like to have, I'd love to hear about them at
+            """
+            , a
+                [ href "mailto:feedback@pquiz.app"
+                , target "_blank"
+                , rel "noopener noreferrer"
+                ]
+                [ text "feedback@pquiz.app" ]
+            ]
+        , p [] [ text "Thanks again for using PQuiz!" ]
+        , p [] [ text "Mr. Pinsky" ]
+        , div
+            [ style
+                [ "display" => "flex"
+                , "flex" => "1 0 auto"
+                , "flex-direction" => "row"
+                , "align-items" => "center"
+                ]
+            ]
+            [ a
+                [ href "https://pquiz.app"
+                , target "_blank"
+                , rel "noopener noreferrer"
+                , style
+                    [ "padding" => "10px"
+                    , "text-decoration" => "none"
+                    , "border-radius" => "5px"
+                    , "background" => "#1c7556"
+                    , "color" => "#fff"
+                    ]
+                ]
+                [ text "Take me to the new version!" ]
+            , div [ style [ "width" => "1em", "background" => "transparent" ] ] []
+            , button
+                [ onClick ReadAnnouncement
+                , style
+                    [ "color" => "#888"
+                    , "text-decoration" => "underline"
+                    , "font-size" => "1em"
+                    ]
+                ]
+                [ text "Dismiss" ]
+            ]
         ]
 
 
@@ -189,11 +292,11 @@ viewHighlightModal { highlightedGroupId, settings, groups } =
                 |> Maybe.map (viewHighlightContents settings groups)
                 |> Maybe.withDefault [ text "" ]
     in
-        viewAsModal
-            { isHidden = highlightedGroupId == Nothing
-            , backgroundClickMsg = Unhighlight
-            }
-            contents
+    viewAsModal
+        { isHidden = highlightedGroupId == Nothing
+        , backgroundClickMsg = Unhighlight
+        }
+        contents
 
 
 viewHighlightContents : Settings -> List Group -> Group -> List (Html Msg)
@@ -235,15 +338,15 @@ viewHighlightTab highlighted { id, label } nextGroup =
                 |> Maybe.map ((==) highlighted)
                 |> Maybe.withDefault False
     in
-        div
-            [ class "tab"
-            , classList
-                [ ( "selected", highlighted == id )
-                , ( "preceding", precedesSelected )
-                ]
-            , onClick (HighlightGroup id)
+    div
+        [ class "tab"
+        , classList
+            [ ( "selected", highlighted == id )
+            , ( "preceding", precedesSelected )
             ]
-            [ span [ class "tab-label" ] [ text label ] ]
+        , onClick (HighlightGroup id)
+        ]
+        [ span [ class "tab-label" ] [ text label ] ]
 
 
 viewSettingsModal : Model -> Html Msg
@@ -289,22 +392,29 @@ viewQuiz { settings, settingsCache, highlightedGroupId, groups } =
         isViewingModal =
             isViewingSettings || isViewingGroup
     in
-        div
-            [ class "quiz page"
-            , classList [ ( "blurred", isViewingModal ) ]
-            ]
-            [ viewGroups settings groups
-            , div [ class "menu-bar" ]
-                [ menuButton SetUp "Settings"
-                , menuButton (AddGroup "New Group") "+ Add Group"
-                , menuButton ResetGroups "Reset All Groups"
-                , a
-                    [ href "mailto:pquiz.feedback@gmail.com"
-                    , target "_blank"
-                    ]
-                    [ text "Send Feedback" ]
+    div
+        [ class "quiz page"
+        , classList [ ( "blurred", isViewingModal ) ]
+        ]
+        [ viewGroups settings groups
+        , div [ class "menu-bar" ]
+            [ menuButton SetUp "Settings"
+            , menuButton (AddGroup "New Group") "+ Add Group"
+            , menuButton ResetGroups "Reset All Groups"
+            , a
+                [ href "mailto:feedback@pquiz.app"
+                , target "_blank"
+                , rel "noopener noreferrer"
                 ]
+                [ text "Send Feedback" ]
+            , a
+                [ href "https://pquiz.app"
+                , target "_blank"
+                , rel "noopener noreferrer"
+                ]
+                [ text "Go to pquiz.app" ]
             ]
+        ]
 
 
 viewGroups : Settings -> List Group -> Html Msg
@@ -327,12 +437,13 @@ arrangeInGrid : List Group -> List (List Group)
 arrangeInGrid pairs =
     if List.length pairs <= 4 then
         List.singleton pairs
+
     else
         let
             half =
                 List.length pairs // 2
         in
-            [ List.take half pairs, List.drop half pairs ]
+        [ List.take half pairs, List.drop half pairs ]
 
 
 viewRow : Settings -> List Group -> Html Msg
@@ -371,11 +482,12 @@ styledButton className msg label =
 
 
 encode : Model -> Value
-encode { settings, settingsCache, nextId, groups } =
+encode { settings, settingsCache, nextId, groups, announcementRead } =
     Encode.object
         [ "settings" => encodeSettings settingsCache settings
         , "nextId" => Encode.int nextId
         , "groups" => encodeGroups groups
+        , "announcementRead" => Encode.bool announcementRead
         ]
 
 
@@ -392,9 +504,14 @@ encodeGroups groups =
 
 decoder : Decoder Model
 decoder =
-    Decode.map5 Model
+    Decode.map6 Model
         (Decode.field "settings" Settings.decoder)
         (Decode.field "groups" <| Decode.list Group.decoder)
         (Decode.succeed Nothing)
         (Decode.succeed Nothing)
         (Decode.field "nextId" Decode.int)
+        (Decode.oneOf
+            [ Decode.field "announcementRead" Decode.bool
+            , Decode.succeed False
+            ]
+        )
