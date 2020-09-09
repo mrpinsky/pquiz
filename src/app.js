@@ -1,19 +1,15 @@
-require('./styles/styles.scss');
+import './styles/styles.scss';
 
-var Elm = require('./elm/App.elm')
-var mountNode = document.getElementById('pquiz');
-var cachedQuiz = localStorage.getItem('pquiz-cached')
+import { Elm } from './elm/App.elm'
+const cachedQuiz = localStorage.getItem('pquiz-cached')
 
-var app = Elm.App.embed(mountNode, JSON.parse(cachedQuiz));
+var app = Elm.App.init(JSON.parse(cachedQuiz));
 
 app.ports.focus.subscribe(function (groupId) {
-  var group, textarea;
-  mountNode.focus();
-  mountNode.blur();
-  group = document.getElementById("group-" + groupId);
+  const group = document.getElementById("group-" + groupId);
   if (group) {
     setTimeout(function () {
-      textarea = group.querySelector("textarea");
+      const textarea = group.querySelector("textarea");
       if (textarea) {
         textarea.focus();
       }

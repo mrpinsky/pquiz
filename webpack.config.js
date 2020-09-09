@@ -3,7 +3,7 @@ var webpack = require("webpack");
 var merge = require('webpack-merge');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const prod = 'production';
 const dev = 'development';
@@ -71,26 +71,13 @@ if (isProd) {
         use: 'elm-webpack-loader',
       }, {
         test: /\.sc?ss$/,
-        use: ExtractTextPlugin.extract({
-          fallback: 'style-loader',
-          use: ['css-loader', 'sass-loader']
-        })
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
       }]
     },
-    plugins: [
-      new ExtractTextPlugin({
-        filename: 'styles.css',
-      }),
-
-      // extract CSS into a separate file
-      // minify JS
-      new webpack.optimize.UglifyJsPlugin({
-        minimize: true,
-        compressor: {
-          warnings: false
-        }
-      })
-    ]
+    plugins: [new MiniCssExtractPlugin()],
+    optimization: {
+      minimize: true
+    }
   });
 }
 

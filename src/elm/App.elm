@@ -1,6 +1,8 @@
-port module App exposing (main)
+module App exposing (main)
 
-import Html exposing (..)
+import Browser
+import Html exposing (Html)
+import Html.Styled
 import Json.Decode as Decode
 import Quiz.App as PQuiz
 import Quiz.Settings as Settings
@@ -8,11 +10,11 @@ import Quiz.Settings as Settings
 
 main : Program Decode.Value PQuiz.Model PQuiz.Msg
 main =
-    Html.programWithFlags
+    Browser.document
         { init = init
         , update = PQuiz.updateWithPorts
-        , view = PQuiz.view
-        , subscriptions = (\_ -> Sub.none)
+        , view = view
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -25,3 +27,15 @@ initModel : Decode.Value -> PQuiz.Model
 initModel value =
     Decode.decodeValue PQuiz.decoder value
         |> Result.withDefault (PQuiz.init 8 Settings.default)
+
+
+view : PQuiz.Model -> Browser.Document PQuiz.Msg
+view model =
+    PQuiz.view model
+        |> Html.Styled.toUnstyled
+        |> document
+
+
+document : Html PQuiz.Msg -> Browser.Document PQuiz.Msg
+document html =
+    { title = "PQuiz", body = [ html ] }

@@ -1,43 +1,41 @@
-module Quiz.Theme
-    exposing
-        ( Theme
-        , Topic
-        , Id
-        , Msg
-        , update
-        , viewAsEditable
-        , viewAsButtons
-        , defaultTopic
-        , init
-        , default
-        , toList
-        , idList
-        , lookup
-        , encode
-        , encodeId
-        , decoder
-        , idDecoder
-        )
+module Quiz.Theme exposing
+    ( Id
+    , Msg
+    , Theme
+    , Topic
+    , decoder
+    , default
+    , defaultTopic
+    , encode
+    , encodeId
+    , idDecoder
+    , idList
+    , init
+    , lookup
+    , toList
+    , update
+    , viewAsButtons
+    , viewAsEditable
+    )
 
+import Colors
 import Css exposing (Color)
-import Css.Colors as Colors
-import Html exposing (..)
-import Html.Attributes as Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes as Attributes exposing (..)
+import Html.Styled.Events exposing (onClick)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import List.Nonempty as NE exposing (Nonempty, (:::))
+import List.Nonempty as NE exposing (Nonempty)
 import Quiz.Observation.Style as Style exposing (Style)
 import Util
     exposing
-        ( (=>)
-        , encodeColor
+        ( checkmark
         , colorDecoder
-        , viewWithRemoveButton
-        , checkmark
         , delta
-        , styles
+        , encodeColor
+        , viewWithRemoveButton
         )
+
 
 
 -- MODEL
@@ -134,10 +132,10 @@ lookup target (Theme _ topics) =
         lookupHelper { id } =
             id == target
     in
-        NE.toList topics
-            |> List.filter lookupHelper
-            |> List.head
-            |> Maybe.withDefault defaultTopic
+    NE.toList topics
+        |> List.filter lookupHelper
+        |> List.head
+        |> Maybe.withDefault defaultTopic
 
 
 
@@ -154,7 +152,7 @@ update : Msg -> Theme -> Theme
 update msg (Theme nextId topics) =
     case msg of
         Add ->
-            toString nextId
+            String.fromInt nextId
                 |> initTopic
                 |> NE.fromElement
                 |> NE.append topics
@@ -165,19 +163,20 @@ update msg (Theme nextId topics) =
                 removeHelper topic =
                     topic.id /= id
             in
-                topics
-                    |> NE.filter removeHelper (NE.head topics)
-                    |> Theme nextId
+            topics
+                |> NE.filter removeHelper (NE.head topics)
+                |> Theme nextId
 
         UpdateStyle target styleMsg ->
             let
                 updateHelper topic =
                     if topic.id == target then
                         Style.update styleMsg topic
+
                     else
                         topic
             in
-                Theme nextId <| NE.map updateHelper topics
+            Theme nextId <| NE.map updateHelper topics
 
 
 
@@ -242,20 +241,17 @@ viewTopic topic =
 
 encode : Theme -> Encode.Value
 encode (Theme _ topics) =
-    topics
-        |> NE.map encodeTopic
-        |> NE.toList
-        |> Encode.list
+    Encode.list encodeTopic <| NE.toList topics
 
 
 encodeTopic : Topic -> Encode.Value
 encodeTopic topic =
     Encode.object
-        [ "id" => encodeId topic.id
-        , "symbol" => Encode.string topic.symbol
-        , "label" => Encode.string topic.label
-        , "color" => encodeColor topic.color
-        , "weight" => Encode.int topic.weight
+        [ ( "id", encodeId topic.id )
+        , ( "symbol", Encode.string topic.symbol )
+        , ( "label", Encode.string topic.label )
+        , ( "color", encodeColor topic.color )
+        , ( "weight", Encode.int topic.weight )
         ]
 
 
@@ -279,10 +275,9 @@ reconstruct topics =
             NE.get -1 topics
                 |> .id
                 |> String.toInt
-                |> Result.toMaybe
                 |> Maybe.withDefault (NE.length topics)
     in
-        Theme nextId topics
+    Theme nextId topics
 
 
 topicDecoder : Decode.Decoder Topic

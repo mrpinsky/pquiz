@@ -1,17 +1,45 @@
-module Quiz.App exposing (Model, Msg(..), arrangeInGrid, decodeCancel, decoder, encode, encodeGroups, encodeSettings, init, initGroups, mapWithNext, mapWithNextHelper, menuButton, numberedGroup, styledButton, update, updateWithPorts, view, viewAsModal, viewGroup, viewGroups, viewHighlightContents, viewHighlightModal, viewHighlightTab, viewHighlightTabs, viewQuiz, viewRow, viewSettingsModal)
+module Quiz.App exposing
+    ( Model
+    , Msg(..)
+    , arrangeInGrid
+    , decodeCancel
+    , decoder
+    , encode
+    , encodeGroups
+    , encodeSettings
+    , init
+    , initGroups
+    , mapWithNext
+    , mapWithNextHelper
+    , menuButton
+    , numberedGroup
+    , styledButton
+    , update
+    , updateWithPorts
+    , view
+    , viewAsModal
+    , viewGroup
+    , viewGroups
+    , viewHighlightContents
+    , viewHighlightModal
+    , viewHighlightTab
+    , viewHighlightTabs
+    , viewQuiz
+    , viewRow
+    , viewSettingsModal
+    )
 
-import Html exposing (..)
-import Html.Attributes exposing (class, classList, href, rel, style, target)
-import Html.Events exposing (on, onClick)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes exposing (class, classList, href, rel, style, target)
+import Html.Styled.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Ports exposing (cacheQuiz, focus)
 import Quiz.Group as Group exposing (Group)
-import Quiz.Settings as Settings exposing (Format(Column, Grid), Settings)
+import Quiz.Settings as Settings exposing (Format(..), Settings)
 import Util
     exposing
-        ( (=>)
-        , encodeKeyedList
+        ( encodeKeyedList
         , encodeMaybe
         , keyedListDecoder
         , onClickWithoutPropagation
@@ -47,7 +75,7 @@ initGroups count =
 
 numberedGroup : Int -> Group
 numberedGroup n =
-    Group.init n ("Group " ++ toString n)
+    Group.init n ("Group " ++ String.fromInt n)
 
 
 
@@ -94,7 +122,7 @@ updateWithPorts msg model =
                 newModel =
                     { model | groups = groups }
             in
-            newModel ! [ focusCmd, cacheQuiz <| encode newModel ]
+            ( newModel, Cmd.batch [ focusCmd, cacheQuiz <| encode newModel ] )
 
         _ ->
             let
@@ -195,12 +223,14 @@ viewAnnouncementModal { announcementRead } =
 newDomainAnnouncement : Html Msg
 newDomainAnnouncement =
     div
-        [ style
-            [ "margin" => "2em"
-            , "height" => "100%"
-            ]
+        [ style "margin" "2em"
+        , style "height" "100%"
         ]
-        [ h3 [ style [ "margin-top" => "0", "color" => "#1c7556" ] ] [ text "Exciting Update" ]
+        [ h3
+            [ style "margin-top" "0"
+            , style "color" "#1c7556"
+            ]
+            [ text "Exciting Update" ]
         , p [] [ text "Hi there!" ]
         , p []
             [ text """
@@ -242,34 +272,28 @@ newDomainAnnouncement =
         , p [] [ text "Thanks again for using PQuiz!" ]
         , p [] [ text "Mr. Pinsky" ]
         , div
-            [ style
-                [ "display" => "flex"
-                , "flex" => "1 0 auto"
-                , "flex-direction" => "row"
-                , "align-items" => "center"
-                ]
+            [ style "display" "flex"
+            , style "flex" "1 0 auto"
+            , style "flex-direction" "row"
+            , style "align-items" "center"
             ]
             [ a
                 [ href "https://pquiz.app"
                 , target "_blank"
                 , rel "noopener noreferrer"
-                , style
-                    [ "padding" => "10px"
-                    , "text-decoration" => "none"
-                    , "border-radius" => "5px"
-                    , "background" => "#1c7556"
-                    , "color" => "#fff"
-                    ]
+                , style "padding" "10px"
+                , style "text-decoration" "none"
+                , style "border-radius" "5px"
+                , style "background" "#1c7556"
+                , style "color" "#fff"
                 ]
                 [ text "Take me to the new version!" ]
-            , div [ style [ "width" => "1em", "background" => "transparent" ] ] []
+            , div [ style "width" "1em", style "background" "transparent" ] []
             , button
                 [ onClick ReadAnnouncement
-                , style
-                    [ "color" => "#888"
-                    , "text-decoration" => "underline"
-                    , "font-size" => "1em"
-                    ]
+                , style "color" "#888"
+                , style "text-decoration" "underline"
+                , style "font-size" "1em"
                 ]
                 [ text "Dismiss" ]
             ]
@@ -280,8 +304,8 @@ viewHighlightModal : Model -> Html Msg
 viewHighlightModal { highlightedGroupId, settings, groups } =
     let
         lookupGroup : List Group -> Int -> Maybe Group
-        lookupGroup groups id =
-            groups
+        lookupGroup groupsList id =
+            groupsList
                 |> List.filter (\group -> id == group.id)
                 |> List.head
 
@@ -484,10 +508,10 @@ styledButton className msg label =
 encode : Model -> Value
 encode { settings, settingsCache, nextId, groups, announcementRead } =
     Encode.object
-        [ "settings" => encodeSettings settingsCache settings
-        , "nextId" => Encode.int nextId
-        , "groups" => encodeGroups groups
-        , "announcementRead" => Encode.bool announcementRead
+        [ ( "settings", encodeSettings settingsCache settings )
+        , ( "nextId", Encode.int nextId )
+        , ( "groups", encodeGroups groups )
+        , ( "announcementRead", Encode.bool announcementRead )
         ]
 
 
@@ -499,7 +523,7 @@ encodeSettings settingsCache settings =
 
 encodeGroups : List Group -> Value
 encodeGroups groups =
-    Encode.list <| List.map Group.encode groups
+    Encode.list Group.encode groups
 
 
 decoder : Decoder Model

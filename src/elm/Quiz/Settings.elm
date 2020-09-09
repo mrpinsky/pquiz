@@ -1,8 +1,8 @@
-module Quiz.Settings exposing (..)
+module Quiz.Settings exposing (Format(..), Msg(..), ObservationId, Settings, decoder, default, defaultKeys, defaultProto, encode, encodeFormat, encodeObservations, formatDecoder, update, view, viewFormatToggle, viewObservations, viewRemovableObservation)
 
-import Html exposing (..)
-import Html.Attributes exposing (value, selected, class, classList)
-import Html.Events exposing (onClick, onWithOptions)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes exposing (class, classList, selected, value)
+import Html.Styled.Events exposing (onClick)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List.Nonempty as NE exposing (Nonempty)
@@ -10,14 +10,14 @@ import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util
     exposing
-        ( (=>)
-        , delta
+        ( delta
         , encodeKeyedList
-        , keyedListDecoder
         , encodeMaybe
-        , viewWithRemoveButton
+        , keyedListDecoder
         , onChange
+        , viewWithRemoveButton
         )
+
 
 
 -- MODEL
@@ -47,12 +47,12 @@ default =
         theme =
             Theme.default
     in
-        { theme = theme
-        , showTally = False
-        , observations = []
-        , nextId = 1
-        , format = Grid
-        }
+    { theme = theme
+    , showTally = False
+    , observations = []
+    , nextId = 1
+    , format = Grid
+    }
 
 
 defaultProto : Nonempty Theme.Id -> Observation
@@ -87,25 +87,26 @@ update msg settings =
                     Theme.idList settings.theme
                         |> NE.head
             in
-                { settings
-                    | observations =
-                        ( toString settings.nextId, Observation.init style "" )
-                            |> List.singleton
-                            |> (++) settings.observations
-                    , nextId = settings.nextId + 1
-                }
+            { settings
+                | observations =
+                    ( String.fromInt settings.nextId, Observation.init style "" )
+                        |> List.singleton
+                        |> (++) settings.observations
+                , nextId = settings.nextId + 1
+            }
 
         UpdateObservation target subMsg ->
             let
                 updateHelper ( id, observation ) =
                     if id == target then
                         ( id, Observation.update subMsg observation )
+
                     else
                         ( id, observation )
             in
-                { settings
-                    | observations = List.map updateHelper settings.observations
-                }
+            { settings
+                | observations = List.map updateHelper settings.observations
+            }
 
         RemoveObservation target ->
             let
@@ -113,7 +114,7 @@ update msg settings =
                 removeHelper ( id, _ ) =
                     id /= target
             in
-                { settings | observations = List.filter removeHelper settings.observations }
+            { settings | observations = List.filter removeHelper settings.observations }
 
         UpdateTheme themeMsg ->
             { settings
@@ -162,9 +163,7 @@ viewFormatToggle format =
             [ div
                 [ onClick (SetFormat Grid)
                 , class "option"
-                , classList
-                    [ "selected" => (format == Grid)
-                    ]
+                , classList [ ( "selected", format == Grid ) ]
                 ]
                 [ p [ class "title" ] [ text "Grid" ]
                 , span [ class "description" ]
@@ -177,9 +176,7 @@ viewFormatToggle format =
             , div
                 [ onClick (SetFormat Column)
                 , class "option"
-                , classList
-                    [ "selected" => (format == Column)
-                    ]
+                , classList [ ( "selected", format == Column ) ]
                 ]
                 [ p [ class "title" ] [ text "Columns" ]
                 , span [ class "description" ]
@@ -234,11 +231,11 @@ viewRemovableObservation theme ( id, observation ) =
 encode : Settings -> Encode.Value
 encode { theme, observations, showTally, nextId, format } =
     Encode.object
-        [ "theme" => Theme.encode theme
-        , "showTally" => Encode.bool showTally
-        , "observations" => encodeObservations observations
-        , "nextId" => Encode.int nextId
-        , "format" => encodeFormat format
+        [ ( "theme", Theme.encode theme )
+        , ( "showTally", Encode.bool showTally )
+        , ( "observations", encodeObservations observations )
+        , ( "nextId", Encode.int nextId )
+        , ( "format", encodeFormat format )
         ]
 
 
@@ -283,4 +280,4 @@ formatDecoder =
                 _ ->
                     Grid
     in
-        Decode.map formatFromString Decode.string
+    Decode.map formatFromString Decode.string

@@ -1,31 +1,31 @@
-module Quiz.Group
-    exposing
-        ( Group
-        , Msg
-        , init
-        , reset
-        , update
-        , view
-        , viewStatic
-        , encode
-        , decoder
-        )
+module Quiz.Group exposing
+    ( Group
+    , Msg
+    , decoder
+    , encode
+    , init
+    , reset
+    , update
+    , view
+    , viewStatic
+    )
 
 import Css
 import Dict exposing (Dict)
-import Html exposing (..)
-import Html.Attributes as Attributes exposing (..)
-import Html.Events as Events exposing (..)
-import Html.Lazy exposing (..)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes as Attributes exposing (..)
+import Html.Styled.Events as Events exposing (..)
+import Html.Styled.Lazy exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import KeyedList exposing (KeyedList, Key)
+import KeyedList exposing (Key, KeyedList)
 import Quiz.Observation as Observation exposing (Observation)
 import Quiz.Observation.Record as Record exposing (Record)
 import Quiz.Settings as Settings exposing (..)
 import Quiz.Theme as Theme exposing (Theme)
 import Util exposing (..)
 import Util.Handlers as Handlers exposing (Handlers)
+
 
 
 -- MODEL
@@ -49,7 +49,7 @@ defaultAsRecord : Dict String Int -> ( String, Observation ) -> Record
 defaultAsRecord tallies ( uid, observation ) =
     Dict.get uid tallies
         |> Maybe.withDefault 0
-        |> (flip Record.init) observation
+        |> (\tally -> Record.init tally observation)
 
 
 reset : Group -> Group
@@ -124,12 +124,13 @@ commit : KeyedList Record -> Theme.Id -> String -> KeyedList Record
 commit existing style label =
     if String.isEmpty label then
         existing
+
     else
         let
             new =
                 Record.init 1 <| Observation.init style label
         in
-            KeyedList.cons new existing
+        KeyedList.cons new existing
 
 
 
@@ -140,7 +141,7 @@ view : Handlers Msg msg { highlightMsg : msg } -> Settings -> Group -> Html msg
 view handlers { theme, observations, showTally } { id, label, defaults, records, current } =
     div
         [ class "group"
-        , Attributes.id <| "group-" ++ toString id
+        , Attributes.id <| "group-" ++ String.fromInt id
         ]
         [ viewBanner
             [ button
@@ -188,10 +189,10 @@ viewStatic { theme, observations, showTally } { label, defaults, records } =
         allRecords =
             defaultRecords ++ localRecords
     in
-        div
-            [ class "group" ]
-            [ div [ class "body" ] [ viewAllRecords theme allRecords ]
-            ]
+    div
+        [ class "group" ]
+        [ div [ class "body" ] [ viewAllRecords theme allRecords ]
+        ]
 
 
 viewLabel : String -> Html Msg
@@ -215,11 +216,11 @@ viewDrawer { onUpdate } theme current =
                 Just id ->
                     viewInput theme id
     in
-        div
-            [ class "drawer"
-            , classList [ ( "open", current /= Nothing ) ]
-            ]
-            [ Html.map onUpdate contents ]
+    div
+        [ class "drawer"
+        , classList [ ( "open", current /= Nothing ) ]
+        ]
+        [ Html.map onUpdate contents ]
 
 
 viewInput : Theme -> Theme.Id -> Html Msg
@@ -228,27 +229,27 @@ viewInput theme id =
         { symbol, color } =
             Theme.lookup id theme
     in
-        div
-            [ class "input-container"
-            , styles [ Css.backgroundColor <| faded color ]
+    div
+        [ class "input-container"
+        , css [ Css.backgroundColor <| faded color ]
+        ]
+        [ div
+            [ class "symbol"
+            , css [ Css.backgroundColor color ]
             ]
-            [ div
-                [ class "symbol"
-                , styles [ Css.backgroundColor color ]
-                ]
-                [ text symbol ]
-            , textarea
-                [ onEnter <| CommitCurrent id
-                , class "observation creating"
-                , value ""
-                ]
-                []
-            , button
-                [ class "cancel"
-                , onClick CancelCurrent
-                ]
-                [ text "x" ]
+            [ text symbol ]
+        , textarea
+            [ onEnter <| CommitCurrent id
+            , class "observation creating"
+            , value ""
             ]
+            []
+        , button
+            [ class "cancel"
+            , onClick CancelCurrent
+            ]
+            [ text "x" ]
+        ]
 
 
 viewDefaults : Theme -> List ( String, Observation ) -> Dict String Int -> Html Msg
@@ -260,7 +261,7 @@ viewDefaults theme defaults tallies =
 viewDefaultObservation : Dict String Int -> Theme -> ( String, Observation ) -> Html Msg
 viewDefaultObservation tallies theme ( id, observation ) =
     defaultAsRecord tallies ( id, observation )
-        |> Record.viewOnlyIncrementable { onUpdate = (\_ -> IncrementDefault id), remove = NoOp } theme
+        |> Record.viewOnlyIncrementable { onUpdate = \_ -> IncrementDefault id, remove = NoOp } theme
 
 
 viewRecords : Theme -> KeyedList Record -> Html Msg
@@ -297,19 +298,16 @@ viewKeyedRecord theme key record =
 encode : Group -> Encode.Value
 encode { id, label, records, defaults } =
     Encode.object
-        [ "id" => Encode.int id
-        , "label" => Encode.string label
-        , "records" => encodeRecords records
-        , "defaults" => encodeDefaults defaults
+        [ ( "id", Encode.int id )
+        , ( "label", Encode.string label )
+        , ( "records", encodeRecords records )
+        , ( "defaults", encodeDefaults defaults )
         ]
 
 
 encodeRecords : KeyedList Record -> Encode.Value
 encodeRecords records =
-    records
-        |> KeyedList.toList
-        |> List.map Record.encode
-        |> Encode.list
+    Encode.list Record.encode <| KeyedList.toList records
 
 
 encodeDefaults : Dict String Int -> Encode.Value
@@ -332,7 +330,7 @@ decoder =
 recordsDecoder : Decoder (KeyedList Record)
 recordsDecoder =
     Decode.list Record.decoder
-        |> Decode.map (KeyedList.fromList)
+        |> Decode.map KeyedList.fromList
 
 
 defaultsDecoder : Decoder (Dict String Int)

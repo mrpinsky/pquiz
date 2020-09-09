@@ -1,27 +1,27 @@
-module Quiz.Observation.Record
-    exposing
-        ( Record
-        , Msg
-        , init
-        , value
-        , update
-        , view
-        , viewOnlyIncrementable
-        , viewStatic
-        , encode
-        , decoder
-        )
+module Quiz.Observation.Record exposing
+    ( Msg
+    , Record
+    , decoder
+    , encode
+    , init
+    , update
+    , value
+    , view
+    , viewOnlyIncrementable
+    , viewStatic
+    )
 
 import Css
-import Html exposing (Html, li, s, button, div, text)
-import Html.Attributes as Attributes exposing (class)
-import Html.Events exposing (onClick)
-import Json.Encode as Encode
+import Html.Styled as Html exposing (Html, button, div, li, s, text)
+import Html.Styled.Attributes as Attributes exposing (class, css)
+import Html.Styled.Events exposing (onClick)
 import Json.Decode as Decode
-import Quiz.Observation as Observation exposing (Observation, MenuContent)
+import Json.Encode as Encode
+import Quiz.Observation as Observation exposing (MenuContent, Observation)
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util exposing (..)
 import Util.Handlers as Handlers exposing (Handlers)
+
 
 
 -- MODEL
@@ -56,7 +56,7 @@ value theme { observation, state } =
                         |> Theme.lookup observation.style
                         |> .weight
             in
-                tally * weight
+            tally * weight
 
 
 
@@ -96,7 +96,7 @@ increment state =
 -- VIEW
 
 
-view : Handlers Msg msg r -> Theme -> Record -> Html msg
+view : Handlers Msg msg {} -> Theme -> Record -> Html msg
 view handlers theme { state, observation } =
     let
         { color, symbol } =
@@ -128,11 +128,13 @@ view handlers theme { state, observation } =
 
         content =
             Observation.view
-                (Handlers.map handlers UpdateObservation)
+                { onUpdate = handlers.onUpdate << UpdateObservation
+                , remove = handlers.remove
+                }
                 (MenuContent color [ tally ] endButtons)
                 observation
     in
-        viewAsListItem state color content
+    viewAsListItem state color content
 
 
 viewOnlyIncrementable : Handlers Msg msg r -> Theme -> Record -> Html msg
@@ -152,8 +154,8 @@ viewOnlyIncrementable handlers theme { state, observation } =
                 (MenuContent color [ tally ] [])
                 observation
     in
-        viewAsListItem state color content
-            |> Html.map handlers.onUpdate
+    viewAsListItem state color content
+        |> Html.map handlers.onUpdate
 
 
 viewStatic : Theme -> Record -> Html msg
@@ -169,7 +171,7 @@ viewStatic theme { state, observation } =
         content =
             Observation.viewStatic (MenuContent color [ tally ] []) observation
     in
-        viewAsListItem state color content
+    viewAsListItem state color content
 
 
 viewAsListItem : State -> Css.Color -> Html msg -> Html msg
@@ -178,12 +180,12 @@ viewAsListItem state color content =
         { background, class } =
             stateCss color state
     in
-        li
-            [ styles [ Css.backgroundColor background ]
-            , Attributes.class "observation"
-            , Attributes.class class
-            ]
-            [ content ]
+    li
+        [ css [ Css.backgroundColor background ]
+        , Attributes.class "observation"
+        , Attributes.class class
+        ]
+        [ content ]
 
 
 type alias StateCss =
@@ -208,14 +210,15 @@ viewStartButtons color state content =
         background =
             if state == Active 0 then
                 Css.hex "eee"
+
             else
                 color
     in
-        div
-            [ class "buttons start"
-            , styles [ Css.backgroundColor background ]
-            ]
-            [ content ]
+    div
+        [ class "buttons start"
+        , css [ Css.backgroundColor background ]
+        ]
+        [ content ]
 
 
 tallyText : String -> State -> Html msg
@@ -225,7 +228,7 @@ tallyText symbol state =
             Html.text "-"
 
         Active tally ->
-            Html.text <| toString tally ++ symbol
+            Html.text <| String.fromInt tally ++ symbol
 
 
 
@@ -235,8 +238,8 @@ tallyText symbol state =
 encode : Record -> Encode.Value
 encode { observation, state } =
     Encode.object
-        [ "observation" => Observation.encode observation
-        , "state" => encodeState state
+        [ ( "observation", Observation.encode observation )
+        , ( "state", encodeState state )
         ]
 
 

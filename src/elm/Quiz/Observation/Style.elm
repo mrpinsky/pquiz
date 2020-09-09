@@ -1,26 +1,23 @@
-module Quiz.Observation.Style
-    exposing
-        ( Style
-        , Msg
-        , update
-        , view
-        , viewAsButton
-        )
+module Quiz.Observation.Style exposing
+    ( Msg
+    , Style
+    , update
+    , view
+    , viewAsButton
+    )
 
 import Css exposing (Color)
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events exposing (..)
 import Util
     exposing
-        ( (=>)
-        , onChange
+        ( colorDecoder
         , delta
         , encodeColor
-        , colorDecoder
-        , styles
-        , viewField
         , faded
+        , onChange
+        , viewField
         )
 import Util.Handlers as Handlers exposing (Handlers)
 
@@ -105,19 +102,8 @@ viewAsButton attrs { color, label } =
     let
         attributes =
             [ class "topic button"
-            , styles [ Css.backgroundColor <| faded color ]
+            , css [ Css.backgroundColor <| faded color ]
             ]
                 ++ attrs
     in
-        button attributes [ text label ]
-
-
-
--- UTIL
-
-
-parseWeight : Int -> String -> Int
-parseWeight default input =
-    String.toInt input
-        |> Result.toMaybe
-        |> Maybe.withDefault default
+    button attributes [ text label ]

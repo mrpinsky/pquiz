@@ -1,18 +1,37 @@
-module Util exposing (..)
+module Util exposing
+    ( checkmark
+    , colorDecoder
+    , delta
+    , emdash
+    , encodeColor
+    , encodeKeyedList
+    , encodeMaybe
+    , fade
+    , faded
+    , innerHtmlDecoder
+    , keyedListDecoder
+    , normalize
+    , onBlurWithValue
+    , onChange
+    , onClickWithoutPropagation
+    , onEnter
+    , onKeyPress
+    , stringFromCode
+    , subdivide
+    , viewField
+    , viewLiveTally
+    , viewStaticTally
+    , viewWithRemoveButton
+    )
 
 import Char
 import Css exposing (Color)
-import Html exposing (Html, Attribute, div, button, text)
-import Html.Attributes as Attributes exposing (class)
-import Html.Events exposing (on, onWithOptions, keyCode, onClick)
-import Json.Encode as Encode
+import Html.Styled as Html exposing (Attribute, Html, button, div, text)
+import Html.Styled.Attributes as Attributes exposing (class, css)
+import Html.Styled.Events exposing (keyCode, on, onClick, stopPropagationOn)
 import Json.Decode as Decode
+import Json.Encode as Encode
 import KeyedList exposing (KeyedList)
-
-
-(=>) : a -> b -> ( a, b )
-(=>) =
-    (,)
 
 
 viewStaticTally : String -> Html msg
@@ -81,10 +100,11 @@ onEnter toMsg =
             if code == 13 then
                 Decode.at [ "target", "value" ] Decode.string
                     |> Decode.map toMsg
+
             else
                 Decode.fail "not ENTER"
     in
-        on "keydown" (Decode.andThen isEnter keyCode)
+    on "keydown" (Decode.andThen isEnter keyCode)
 
 
 onChange : (String -> msg) -> Attribute msg
@@ -99,9 +119,7 @@ onBlurWithValue toMsg =
 
 onClickWithoutPropagation : msg -> Html.Attribute msg
 onClickWithoutPropagation msg =
-    onWithOptions "click"
-        { stopPropagation = True, preventDefault = False }
-        (Decode.succeed msg)
+    stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
 
 innerHtmlDecoder : Decode.Decoder String
@@ -117,16 +135,9 @@ viewWithRemoveButton msg html =
         ]
 
 
-styles : List Css.Style -> Html.Attribute msg
-styles =
-    Css.asPairs >> Attributes.style
-
-
 encodeKeyedList : (a -> Encode.Value) -> KeyedList a -> Encode.Value
 encodeKeyedList encoder keyedList =
-    KeyedList.toList keyedList
-        |> List.map encoder
-        |> Encode.list
+    Encode.list encoder <| KeyedList.toList keyedList
 
 
 keyedListDecoder : Decode.Decoder a -> Decode.Decoder (KeyedList a)
@@ -139,6 +150,7 @@ subdivide : Int -> List a -> List (List a)
 subdivide subSize list =
     if List.length list <= subSize then
         List.singleton list
+
     else
         list
             |> List.drop subSize
@@ -160,7 +172,7 @@ fade { red, green, blue } tally =
                 |> curve
                 |> normalize (curve opaqueAt)
     in
-        Css.rgba red green blue alpha
+    Css.rgba red green blue alpha
 
 
 faded : Css.Color -> Css.Color
@@ -175,7 +187,7 @@ normalize max scaled =
 
 viewField : String -> Int -> Html msg -> Html msg
 viewField label flex inputEl =
-    Html.label [ Attributes.class "field", styles [ Css.flex <| Css.int flex ] ]
+    Html.label [ Attributes.class "field", css [ Css.flex <| Css.int flex ] ]
         [ div [] [ Html.text label ]
         , inputEl
         ]

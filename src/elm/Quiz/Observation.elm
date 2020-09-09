@@ -1,37 +1,35 @@
-module Quiz.Observation
-    exposing
-        ( Observation
-        , Msg
-        , init
-        , update
-        , MenuContent
-        , view
-        , viewStatic
-        , viewAsProto
-        , encode
-        , decoder
-        )
+module Quiz.Observation exposing
+    ( MenuContent
+    , Msg
+    , Observation
+    , decoder
+    , encode
+    , init
+    , update
+    , view
+    , viewAsProto
+    , viewStatic
+    )
 
 import Css
-import Html exposing (..)
-import Html.Attributes as Attributes exposing (..)
-import Html.Events as Events exposing (..)
-import Html.Lazy as Lazy exposing (..)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes as Attributes exposing (..)
+import Html.Styled.Events as Events exposing (..)
+import Html.Styled.Lazy as Lazy exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Quiz.Theme as Theme exposing (Theme, Topic)
 import Util
     exposing
-        ( (=>)
-        , checkmark
+        ( checkmark
         , emdash
-        , styles
         , onChange
         , onEnter
         , onKeyPress
         , viewField
         )
 import Util.Handlers as Handlers exposing (Handlers)
+
 
 
 -- MODEL
@@ -125,7 +123,7 @@ viewEndMenu : Css.Color -> List (Html msg) -> Html msg
 viewEndMenu color content =
     div
         [ class "buttons end unobtrusive"
-        , styles [ Css.backgroundColor color ]
+        , css [ Css.backgroundColor color ]
         ]
         content
 
@@ -205,6 +203,6 @@ decoder =
 encode : Observation -> Encode.Value
 encode { style, label } =
     Encode.object
-        [ "style" => Theme.encodeId style
-        , "label" => Encode.string label
+        [ ( "style", Theme.encodeId style )
+        , ( "label", Encode.string label )
         ]
